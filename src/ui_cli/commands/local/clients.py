@@ -315,6 +315,104 @@ def get_client(
         console.print()
 
 
+@app.command("status")
+def client_status(
+    identifier: Annotated[
+        str | None,
+        typer.Argument(help="Client MAC address or name"),
+    ] = None,
+    output: Annotated[
+        OutputFormat,
+        typer.Option("--output", "-o", help="Output format"),
+    ] = OutputFormat.TABLE,
+) -> None:
+    """Show client connection and block status.
+
+    Examples:
+        ./ui lo clients status my-iPhone
+        ./ui lo clients status AA:BB:CC:DD:EE:FF
+    """
+    if not identifier:
+        console.print("[yellow]Usage:[/yellow] ./ui lo clients status <name or MAC>")
+        console.print()
+        console.print("Examples:")
+        console.print("  ./ui lo clients status my-iPhone")
+        console.print("  ./ui lo clients status AA:BB:CC:DD:EE:FF")
+        raise typer.Exit(1)
+
+    try:
+        api_client = UniFiLocalClient()
+
+        async def _get_status():
+            mac, name = await resolve_client_identifier(api_client, identifier)
+            if not mac:
+                return None, None, None
+            # Get from all clients (includes offline) for block status
+            all_clients = await api_client.list_all_clients()
+            client_info = None
+            for c in all_clients:
+                if c.get("mac", "").lower() == mac.lower():
+                    client_info = c
+                    break
+            # Also check active clients for online status
+            active_clients = await api_client.list_clients()
+            is_online = any(c.get("mac", "").lower() == mac.lower() for c in active_clients)
+            return client_info, name, is_online
+
+        client_info, resolved_name, is_online = asyncio.run(_get_status())
+    except Exception as e:
+        handle_error(e)
+        return
+
+    if not client_info:
+        console.print(f"[yellow]Client not found:[/yellow] {identifier}")
+        raise typer.Exit(1)
+
+    # Build status info
+    name = resolved_name or client_info.get("name") or client_info.get("hostname") or "(unknown)"
+    mac = client_info.get("mac", "").upper()
+    is_blocked = client_info.get("blocked", False)
+    is_guest = client_info.get("is_guest", False)
+    ip = client_info.get("ip") or client_info.get("last_ip") or ""
+
+    status_data = {
+        "name": name,
+        "mac": mac,
+        "ip": ip,
+        "online": is_online,
+        "blocked": is_blocked,
+        "guest": is_guest,
+    }
+
+    if output == OutputFormat.JSON:
+        output_json(status_data)
+    else:
+        console.print()
+        console.print(f"[bold]Client Status: {name}[/bold]")
+        console.print("─" * 40)
+        console.print(f"  [dim]MAC:[/dim]     {mac}")
+        if ip:
+            console.print(f"  [dim]IP:[/dim]      {ip}")
+
+        # Online status
+        if is_online:
+            console.print(f"  [dim]Online:[/dim]  [green]Yes[/green]")
+        else:
+            console.print(f"  [dim]Online:[/dim]  [dim]No[/dim]")
+
+        # Block status
+        if is_blocked:
+            console.print(f"  [dim]Blocked:[/dim] [red]Yes[/red]")
+        else:
+            console.print(f"  [dim]Blocked:[/dim] [green]No[/green]")
+
+        # Guest status
+        if is_guest:
+            console.print(f"  [dim]Guest:[/dim]   Yes")
+
+        console.print()
+
+
 @app.command("block")
 def block_client(
     identifier: Annotated[
@@ -339,30 +437,31 @@ def block_client(
         console.print("  ./ui lo clients block my-iPhone")
         console.print("  ./ui lo clients block AA:BB:CC:DD:EE:FF -y")
         raise typer.Exit(1)
+
+    api_client = UniFiLocalClient()
+
+    # Resolve identifier to MAC
     try:
-        api_client = UniFiLocalClient()
+        mac, name = asyncio.run(resolve_client_identifier(api_client, identifier))
+    except Exception as e:
+        handle_error(e)
+        return
 
-        async def _resolve():
-            return await resolve_client_identifier(api_client, identifier)
+    if not mac:
+        console.print(f"[yellow]Client not found:[/yellow] {identifier}")
+        raise typer.Exit(1)
 
-        mac, name = asyncio.run(_resolve())
+    display = f"{name} ({mac.upper()})" if name else mac.upper()
 
-        if not mac:
-            console.print(f"[yellow]Client not found:[/yellow] {identifier}")
-            raise typer.Exit(1)
+    # Confirm action
+    if not yes:
+        if not typer.confirm(f"Block client {display}?"):
+            console.print("[dim]Cancelled[/dim]")
+            raise typer.Exit(0)
 
-        display = f"{name} ({mac.upper()})" if name else mac.upper()
-
-        # Confirm action
-        if not yes:
-            confirm = typer.confirm(f"Block client {display}?")
-            if not confirm:
-                console.print("[dim]Cancelled[/dim]")
-                raise typer.Exit(0)
-
+    # Execute action
+    try:
         success = asyncio.run(api_client.block_client(mac))
-    except typer.Exit:
-        raise
     except Exception as e:
         handle_error(e)
         return
@@ -398,30 +497,31 @@ def unblock_client(
         console.print("  ./ui lo clients unblock my-iPhone")
         console.print("  ./ui lo clients unblock AA:BB:CC:DD:EE:FF -y")
         raise typer.Exit(1)
+
+    api_client = UniFiLocalClient()
+
+    # Resolve identifier to MAC
     try:
-        api_client = UniFiLocalClient()
+        mac, name = asyncio.run(resolve_client_identifier(api_client, identifier))
+    except Exception as e:
+        handle_error(e)
+        return
 
-        async def _resolve():
-            return await resolve_client_identifier(api_client, identifier)
+    if not mac:
+        console.print(f"[yellow]Client not found:[/yellow] {identifier}")
+        raise typer.Exit(1)
 
-        mac, name = asyncio.run(_resolve())
+    display = f"{name} ({mac.upper()})" if name else mac.upper()
 
-        if not mac:
-            console.print(f"[yellow]Client not found:[/yellow] {identifier}")
-            raise typer.Exit(1)
+    # Confirm action
+    if not yes:
+        if not typer.confirm(f"Unblock client {display}?"):
+            console.print("[dim]Cancelled[/dim]")
+            raise typer.Exit(0)
 
-        display = f"{name} ({mac.upper()})" if name else mac.upper()
-
-        # Confirm action
-        if not yes:
-            confirm = typer.confirm(f"Unblock client {display}?")
-            if not confirm:
-                console.print("[dim]Cancelled[/dim]")
-                raise typer.Exit(0)
-
+    # Execute action
+    try:
         success = asyncio.run(api_client.unblock_client(mac))
-    except typer.Exit:
-        raise
     except Exception as e:
         handle_error(e)
         return
@@ -457,30 +557,31 @@ def kick_client(
         console.print("  ./ui lo clients kick my-iPhone")
         console.print("  ./ui lo clients kick AA:BB:CC:DD:EE:FF -y")
         raise typer.Exit(1)
+
+    api_client = UniFiLocalClient()
+
+    # Resolve identifier to MAC
     try:
-        api_client = UniFiLocalClient()
+        mac, name = asyncio.run(resolve_client_identifier(api_client, identifier))
+    except Exception as e:
+        handle_error(e)
+        return
 
-        async def _resolve():
-            return await resolve_client_identifier(api_client, identifier)
+    if not mac:
+        console.print(f"[yellow]Client not found:[/yellow] {identifier}")
+        raise typer.Exit(1)
 
-        mac, name = asyncio.run(_resolve())
+    display = f"{name} ({mac.upper()})" if name else mac.upper()
 
-        if not mac:
-            console.print(f"[yellow]Client not found:[/yellow] {identifier}")
-            raise typer.Exit(1)
+    # Confirm action
+    if not yes:
+        if not typer.confirm(f"Kick client {display}?"):
+            console.print("[dim]Cancelled[/dim]")
+            raise typer.Exit(0)
 
-        display = f"{name} ({mac.upper()})" if name else mac.upper()
-
-        # Confirm action
-        if not yes:
-            confirm = typer.confirm(f"Kick client {display}?")
-            if not confirm:
-                console.print("[dim]Cancelled[/dim]")
-                raise typer.Exit(0)
-
+    # Execute action
+    try:
         success = asyncio.run(api_client.kick_client(mac))
-    except typer.Exit:
-        raise
     except Exception as e:
         handle_error(e)
         return
