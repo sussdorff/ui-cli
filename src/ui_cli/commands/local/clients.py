@@ -259,13 +259,28 @@ def list_all_clients(
 
 @app.command("get")
 def get_client(
-    identifier: Annotated[str, typer.Argument(help="Client MAC address or name")],
+    identifier: Annotated[
+        str | None,
+        typer.Argument(help="Client MAC address or name"),
+    ] = None,
     output: Annotated[
         OutputFormat,
         typer.Option("--output", "-o", help="Output format"),
     ] = OutputFormat.TABLE,
 ) -> None:
-    """Get details for a specific client."""
+    """Get details for a specific client.
+
+    Examples:
+        ./ui lo clients get my-iPhone
+        ./ui lo clients get AA:BB:CC:DD:EE:FF
+    """
+    if not identifier:
+        console.print("[yellow]Usage:[/yellow] ./ui lo clients get <name or MAC>")
+        console.print()
+        console.print("Examples:")
+        console.print("  ./ui lo clients get my-iPhone")
+        console.print("  ./ui lo clients get AA:BB:CC:DD:EE:FF")
+        raise typer.Exit(1)
     try:
         api_client = UniFiLocalClient()
 
@@ -302,9 +317,24 @@ def get_client(
 
 @app.command("block")
 def block_client(
-    identifier: Annotated[str, typer.Argument(help="Client MAC address or name")],
+    identifier: Annotated[
+        str | None,
+        typer.Argument(help="Client MAC address or name"),
+    ] = None,
 ) -> None:
-    """Block a client from connecting."""
+    """Block a client from connecting.
+
+    Examples:
+        ./ui lo clients block my-iPhone
+        ./ui lo clients block AA:BB:CC:DD:EE:FF
+    """
+    if not identifier:
+        console.print("[yellow]Usage:[/yellow] ./ui lo clients block <name or MAC>")
+        console.print()
+        console.print("Examples:")
+        console.print("  ./ui lo clients block my-iPhone")
+        console.print("  ./ui lo clients block AA:BB:CC:DD:EE:FF")
+        raise typer.Exit(1)
     try:
         api_client = UniFiLocalClient()
 
@@ -334,9 +364,24 @@ def block_client(
 
 @app.command("unblock")
 def unblock_client(
-    identifier: Annotated[str, typer.Argument(help="Client MAC address or name")],
+    identifier: Annotated[
+        str | None,
+        typer.Argument(help="Client MAC address or name"),
+    ] = None,
 ) -> None:
-    """Unblock a previously blocked client."""
+    """Unblock a previously blocked client.
+
+    Examples:
+        ./ui lo clients unblock my-iPhone
+        ./ui lo clients unblock AA:BB:CC:DD:EE:FF
+    """
+    if not identifier:
+        console.print("[yellow]Usage:[/yellow] ./ui lo clients unblock <name or MAC>")
+        console.print()
+        console.print("Examples:")
+        console.print("  ./ui lo clients unblock my-iPhone")
+        console.print("  ./ui lo clients unblock AA:BB:CC:DD:EE:FF")
+        raise typer.Exit(1)
     try:
         api_client = UniFiLocalClient()
 
@@ -366,9 +411,24 @@ def unblock_client(
 
 @app.command("kick")
 def kick_client(
-    identifier: Annotated[str, typer.Argument(help="Client MAC address or name")],
+    identifier: Annotated[
+        str | None,
+        typer.Argument(help="Client MAC address or name"),
+    ] = None,
 ) -> None:
-    """Kick (disconnect) a client, forcing reconnection."""
+    """Kick (disconnect) a client, forcing reconnection.
+
+    Examples:
+        ./ui lo clients kick my-iPhone
+        ./ui lo clients kick AA:BB:CC:DD:EE:FF
+    """
+    if not identifier:
+        console.print("[yellow]Usage:[/yellow] ./ui lo clients kick <name or MAC>")
+        console.print()
+        console.print("Examples:")
+        console.print("  ./ui lo clients kick my-iPhone")
+        console.print("  ./ui lo clients kick AA:BB:CC:DD:EE:FF")
+        raise typer.Exit(1)
     try:
         api_client = UniFiLocalClient()
 
