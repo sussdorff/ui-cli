@@ -110,6 +110,63 @@ def handle_error(e: Exception) -> None:
     raise typer.Exit(1)
 
 
+def is_mac_address(value: str) -> bool:
+    """Check if a string looks like a MAC address."""
+    # MAC formats: AA:BB:CC:DD:EE:FF or AA-BB-CC-DD-EE-FF or AABBCCDDEEFF
+    import re
+    mac_patterns = [
+        r'^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$',  # AA:BB:CC:DD:EE:FF
+        r'^([0-9A-Fa-f]{2}-){5}[0-9A-Fa-f]{2}$',  # AA-BB-CC-DD-EE-FF
+        r'^[0-9A-Fa-f]{12}$',                       # AABBCCDDEEFF
+    ]
+    return any(re.match(pattern, value) for pattern in mac_patterns)
+
+
+async def resolve_client_identifier(
+    api_client: UniFiLocalClient,
+    identifier: str,
+) -> tuple[str | None, str | None]:
+    """Resolve a client name or MAC to (mac, name).
+
+    Returns (mac, name) if found, (None, None) if not found.
+    If identifier is a MAC, returns it directly with the name if found.
+    If identifier is a name, searches for matching client.
+    """
+    if is_mac_address(identifier):
+        # It's a MAC address - try to get the client to find its name
+        client_data = await api_client.get_client(identifier)
+        if client_data:
+            name = client_data.get("name") or client_data.get("hostname") or identifier
+            return identifier.lower().replace("-", ":"), name
+        return identifier.lower().replace("-", ":"), None
+
+    # It's a name - search for it in all clients
+    clients = await api_client.list_all_clients()
+    identifier_lower = identifier.lower()
+
+    for client in clients:
+        name = client.get("name") or client.get("hostname") or ""
+        if name.lower() == identifier_lower:
+            return client.get("mac", "").lower(), name
+
+    # Try partial match if exact match not found
+    matches = []
+    for client in clients:
+        name = client.get("name") or client.get("hostname") or ""
+        if identifier_lower in name.lower():
+            matches.append((client.get("mac", "").lower(), name))
+
+    if len(matches) == 1:
+        return matches[0]
+    elif len(matches) > 1:
+        console.print(f"[yellow]Multiple clients match '{identifier}':[/yellow]")
+        for mac, name in matches:
+            console.print(f"  - {name} ({mac.upper()})")
+        return None, None
+
+    return None, None
+
+
 @app.command("list")
 def list_clients(
     output: Annotated[
@@ -202,7 +259,7 @@ def list_all_clients(
 
 @app.command("get")
 def get_client(
-    mac: Annotated[str, typer.Argument(help="Client MAC address")],
+    identifier: Annotated[str, typer.Argument(help="Client MAC address or name")],
     output: Annotated[
         OutputFormat,
         typer.Option("--output", "-o", help="Output format"),
@@ -211,13 +268,21 @@ def get_client(
     """Get details for a specific client."""
     try:
         api_client = UniFiLocalClient()
-        client_data = asyncio.run(api_client.get_client(mac))
+
+        async def _get():
+            mac, name = await resolve_client_identifier(api_client, identifier)
+            if not mac:
+                return None, None
+            client_data = await api_client.get_client(mac)
+            return client_data, name
+
+        client_data, resolved_name = asyncio.run(_get())
     except Exception as e:
         handle_error(e)
         return
 
     if not client_data:
-        console.print(f"[yellow]Client not found:[/yellow] {mac}")
+        console.print(f"[yellow]Client not found:[/yellow] {identifier}")
         raise typer.Exit(1)
 
     if output == OutputFormat.JSON:
@@ -225,8 +290,9 @@ def get_client(
     else:
         # Display as key-value pairs
         formatted = format_client(client_data, verbose=True)
+        display_name = resolved_name or formatted.get("name", identifier)
         console.print()
-        console.print(f"[bold]Client Details: {mac.upper()}[/bold]")
+        console.print(f"[bold]Client Details: {display_name}[/bold]")
         console.print("─" * 40)
         for key, value in formatted.items():
             if value:
@@ -236,58 +302,97 @@ def get_client(
 
 @app.command("block")
 def block_client(
-    mac: Annotated[str, typer.Argument(help="Client MAC address to block")],
+    identifier: Annotated[str, typer.Argument(help="Client MAC address or name")],
 ) -> None:
     """Block a client from connecting."""
     try:
-        client = UniFiLocalClient()
-        success = asyncio.run(client.block_client(mac))
+        api_client = UniFiLocalClient()
+
+        async def _block():
+            mac, name = await resolve_client_identifier(api_client, identifier)
+            if not mac:
+                return False, None, None
+            success = await api_client.block_client(mac)
+            return success, mac, name
+
+        success, mac, name = asyncio.run(_block())
     except Exception as e:
         handle_error(e)
         return
 
+    if not mac:
+        console.print(f"[yellow]Client not found:[/yellow] {identifier}")
+        raise typer.Exit(1)
+
+    display = f"{name} ({mac.upper()})" if name else mac.upper()
     if success:
-        console.print(f"[green]Blocked client:[/green] {mac.upper()}")
+        console.print(f"[green]Blocked client:[/green] {display}")
     else:
-        console.print(f"[red]Failed to block client:[/red] {mac.upper()}")
+        console.print(f"[red]Failed to block client:[/red] {display}")
         raise typer.Exit(1)
 
 
 @app.command("unblock")
 def unblock_client(
-    mac: Annotated[str, typer.Argument(help="Client MAC address to unblock")],
+    identifier: Annotated[str, typer.Argument(help="Client MAC address or name")],
 ) -> None:
     """Unblock a previously blocked client."""
     try:
-        client = UniFiLocalClient()
-        success = asyncio.run(client.unblock_client(mac))
+        api_client = UniFiLocalClient()
+
+        async def _unblock():
+            mac, name = await resolve_client_identifier(api_client, identifier)
+            if not mac:
+                return False, None, None
+            success = await api_client.unblock_client(mac)
+            return success, mac, name
+
+        success, mac, name = asyncio.run(_unblock())
     except Exception as e:
         handle_error(e)
         return
 
+    if not mac:
+        console.print(f"[yellow]Client not found:[/yellow] {identifier}")
+        raise typer.Exit(1)
+
+    display = f"{name} ({mac.upper()})" if name else mac.upper()
     if success:
-        console.print(f"[green]Unblocked client:[/green] {mac.upper()}")
+        console.print(f"[green]Unblocked client:[/green] {display}")
     else:
-        console.print(f"[red]Failed to unblock client:[/red] {mac.upper()}")
+        console.print(f"[red]Failed to unblock client:[/red] {display}")
         raise typer.Exit(1)
 
 
 @app.command("kick")
 def kick_client(
-    mac: Annotated[str, typer.Argument(help="Client MAC address to kick")],
+    identifier: Annotated[str, typer.Argument(help="Client MAC address or name")],
 ) -> None:
     """Kick (disconnect) a client, forcing reconnection."""
     try:
-        client = UniFiLocalClient()
-        success = asyncio.run(client.kick_client(mac))
+        api_client = UniFiLocalClient()
+
+        async def _kick():
+            mac, name = await resolve_client_identifier(api_client, identifier)
+            if not mac:
+                return False, None, None
+            success = await api_client.kick_client(mac)
+            return success, mac, name
+
+        success, mac, name = asyncio.run(_kick())
     except Exception as e:
         handle_error(e)
         return
 
+    if not mac:
+        console.print(f"[yellow]Client not found:[/yellow] {identifier}")
+        raise typer.Exit(1)
+
+    display = f"{name} ({mac.upper()})" if name else mac.upper()
     if success:
-        console.print(f"[green]Kicked client:[/green] {mac.upper()}")
+        console.print(f"[green]Kicked client:[/green] {display}")
     else:
-        console.print(f"[red]Failed to kick client:[/red] {mac.upper()}")
+        console.print(f"[red]Failed to kick client:[/red] {display}")
         raise typer.Exit(1)
 
 
