@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# UniFi CLI wrapper script
+# Automatically activates conda environment and runs the CLI
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONDA_ENV="ui-cli"
+
+# Source conda from common locations
+if [ -f "$HOME/miniconda3/etc/profile.d/conda.sh" ]; then
+    source "$HOME/miniconda3/etc/profile.d/conda.sh"
+elif [ -f "$HOME/anaconda3/etc/profile.d/conda.sh" ]; then
+    source "$HOME/anaconda3/etc/profile.d/conda.sh"
+elif [ -f "/opt/homebrew/Caskroom/miniconda/base/etc/profile.d/conda.sh" ]; then
+    source "/opt/homebrew/Caskroom/miniconda/base/etc/profile.d/conda.sh"
+elif [ -f "/usr/local/Caskroom/miniconda/base/etc/profile.d/conda.sh" ]; then
+    source "/usr/local/Caskroom/miniconda/base/etc/profile.d/conda.sh"
+elif [ -n "$CONDA_EXE" ]; then
+    # Use CONDA_EXE if set
+    source "$(dirname "$CONDA_EXE")/../etc/profile.d/conda.sh"
+fi
+
+# Activate environment
+conda activate "$CONDA_ENV" 2>/dev/null || {
+    echo "Error: Conda environment '$CONDA_ENV' not found."
+    echo "Run: conda env create -f environment.yml"
+    exit 1
+}
+
+# Load .env if present in script directory
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    set -a
+    source "$SCRIPT_DIR/.env"
+    set +a
+fi
+
+# Run the CLI
+python -m ui_cli.main "$@"
