@@ -84,3 +84,6 @@ tmp/
 temp/
 *.tmp
 *.temp
+
+# MkDocs
+site/

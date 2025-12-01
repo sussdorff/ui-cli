@@ -1,0 +1,78 @@
+site_name: UI-CLI
+site_description: Manage your UniFi infrastructure from the command line - Gorilla Powered!
+site_url: https://vedanta.github.io/ui-cli
+repo_url: https://github.com/vedanta/ui-cli
+repo_name: vedanta/ui-cli
+
+theme:
+  name: material
+  logo: assets/gorilla.png
+  favicon: assets/gorilla.png
+  palette:
+    # Dark mode (default - terminal feel)
+    - scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    # Light mode
+    - scheme: default
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+  icon:
+    repo: fontawesome/brands/github
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/vedanta/ui-cli
+  generator: false
+
+copyright: "Gorilla Powered! 🦍 | MIT License"
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - attr_list
+  - md_in_html
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Installation: installation.md
+  - Configuration: configuration.md
+  - Commands:
+    - Overview: commands/index.md
+    - Cloud API: commands/cloud.md
+    - Local Controller: commands/local.md
+  - Examples: examples.md
+  - Troubleshooting: troubleshooting.md
+  - Changelog: changelog.md
