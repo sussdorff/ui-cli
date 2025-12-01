@@ -10,37 +10,39 @@ hide:
 }
 .hero {
   text-align: center;
-  padding: 2rem 0;
+  padding: 1.5rem 0 1rem;
 }
 .hero img {
-  max-width: 300px;
-  margin-bottom: 1rem;
-}
-.hero h1 {
-  font-size: 3rem;
+  max-width: 200px;
   margin-bottom: 0.5rem;
 }
+.hero h1 {
+  font-size: 2.5rem;
+  margin: 0.5rem 0;
+}
 .hero .tagline {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   color: #ffc107;
-  margin-bottom: 1rem;
+  margin: 0.25rem 0;
 }
 .hero .subtitle {
-  font-size: 1.2rem;
+  font-size: 1rem;
   opacity: 0.8;
-  margin-bottom: 2rem;
+  margin: 0.5rem 0 1rem;
 }
 .hero .buttons {
   display: flex;
   gap: 1rem;
   justify-content: center;
   flex-wrap: wrap;
+  margin-bottom: 1rem;
 }
 .hero .buttons a {
-  padding: 0.75rem 1.5rem;
+  padding: 0.6rem 1.25rem;
   border-radius: 0.5rem;
   text-decoration: none;
   font-weight: bold;
+  font-size: 0.9rem;
 }
 .hero .buttons .primary {
   background: #7c4dff;
@@ -50,31 +52,51 @@ hide:
   border: 2px solid #7c4dff;
   color: #7c4dff;
 }
-.features {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  margin-top: 3rem;
-}
-.feature {
-  padding: 1.5rem;
-  border-radius: 0.5rem;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-}
-.feature h3 {
-  margin-top: 0;
-}
 .install-box {
   background: #1e1e1e;
   border-radius: 0.5rem;
-  padding: 1rem;
-  margin: 2rem auto;
-  max-width: 600px;
-  text-align: left;
+  padding: 0.5rem 1rem;
+  margin: 0 auto 1.5rem;
+  max-width: 500px;
+  font-size: 0.85rem;
 }
-.install-box code {
-  color: #4caf50;
+.features {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+@media (max-width: 800px) {
+  .features {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.feature {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  text-align: center;
+}
+.feature .icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+.feature h3 {
+  margin: 0.25rem 0;
+  font-size: 0.95rem;
+}
+.feature p {
+  margin: 0;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+.footer-note {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.85rem;
+  opacity: 0.6;
 }
 </style>
 
@@ -86,62 +108,59 @@ hide:
 
   <div class="buttons">
     <a href="getting-started/" class="primary">Get Started</a>
-    <a href="https://github.com/vedanta/ui-cli" class="secondary">View on GitHub</a>
+    <a href="https://github.com/vedanta/ui-cli" class="secondary">GitHub</a>
   </div>
-</div>
 
-<div class="install-box">
+  <div class="install-box">
+
 ```bash
-git clone https://github.com/vedanta/ui-cli.git && cd ui-cli
-pip install -e .
-./ui status
+git clone https://github.com/vedanta/ui-cli.git && cd ui-cli && pip install -e .
 ```
+
+  </div>
 </div>
 
 <div class="features">
   <div class="feature">
-    <h3>🌐 Cloud API</h3>
-    <p>Manage multiple sites from anywhere via <code>api.ui.com</code>. View hosts, sites, devices, ISP metrics, and SD-WAN configurations.</p>
+    <div class="icon">🌐</div>
+    <h3>Cloud API</h3>
+    <p>Multi-site management via api.ui.com</p>
   </div>
-
   <div class="feature">
-    <h3>🏠 Local Controller</h3>
-    <p>Connect directly to your UDM, Cloud Key, or self-hosted controller. Full client and device management with real-time data.</p>
+    <div class="icon">🏠</div>
+    <h3>Local Controller</h3>
+    <p>Direct UDM & Cloud Key access</p>
   </div>
-
   <div class="feature">
-    <h3>👥 Client Management</h3>
-    <p>List, search, block, unblock, and monitor network clients. View detailed status including signal strength and WiFi experience.</p>
+    <div class="icon">👥</div>
+    <h3>Client Control</h3>
+    <p>List, block, monitor clients</p>
   </div>
-
   <div class="feature">
-    <h3>📡 Device Control</h3>
-    <p>Restart, upgrade firmware, locate with LED, and adopt new devices. Full control over your UniFi infrastructure.</p>
+    <div class="icon">📡</div>
+    <h3>Device Mgmt</h3>
+    <p>Restart, upgrade, locate</p>
   </div>
-
   <div class="feature">
-    <h3>📊 Traffic Analytics</h3>
-    <p>Deep packet inspection (DPI) statistics, per-client traffic breakdown, and daily/hourly bandwidth reports.</p>
+    <div class="icon">📊</div>
+    <h3>Analytics</h3>
+    <p>DPI stats & traffic reports</p>
   </div>
-
   <div class="feature">
-    <h3>🎫 Guest Vouchers</h3>
-    <p>Create and manage hotspot vouchers with custom duration, data limits, and speed caps.</p>
+    <div class="icon">🔥</div>
+    <h3>Firewall</h3>
+    <p>Rules, groups, port forwards</p>
   </div>
-
   <div class="feature">
-    <h3>🔥 Firewall Inspection</h3>
-    <p>View firewall rules, address/port groups, and port forwarding configurations.</p>
+    <div class="icon">🎫</div>
+    <h3>Vouchers</h3>
+    <p>Guest hotspot management</p>
   </div>
-
   <div class="feature">
-    <h3>💾 Config Export</h3>
-    <p>Backup your running configuration to YAML or JSON. Filter by section for targeted exports.</p>
+    <div class="icon">💾</div>
+    <h3>Config Export</h3>
+    <p>Backup to YAML/JSON</p>
   </div>
 </div>
 
----
-
-<div style="text-align: center; margin-top: 3rem; opacity: 0.7;">
-  <p>Works with <strong>UDM</strong> • <strong>UDM Pro</strong> • <strong>UDM SE</strong> • <strong>Cloud Key</strong> • <strong>Self-hosted Controllers</strong></p>
-</div>
+<p class="footer-note">Works with UDM • UDM Pro • UDM SE • Cloud Key • Self-hosted</p>
