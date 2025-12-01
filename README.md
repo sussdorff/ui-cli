@@ -24,7 +24,7 @@ UI-CLI is a command-line tool for managing UniFi networks. It supports two modes
 | Mode | Connection | Use Case |
 |------|------------|----------|
 | **Cloud API** | Via `api.ui.com` | Manage multiple sites, view ISP metrics, SD-WAN |
-| **Local API** | Direct to controller | Client management, running config, real-time data |
+| **Local API** | Direct to controller | Client management, device control, real-time data |
 
 ---
 
@@ -120,6 +120,14 @@ Commands that use the UniFi Site Manager API (`api.ui.com`).
 
 Commands that connect directly to your UniFi Controller. Use `./ui local` or `./ui lo`.
 
+### Health & Monitoring
+
+```bash
+./ui lo health                  # Site health summary
+./ui lo events list             # Recent events
+./ui lo events list -l 50       # Last 50 events
+```
+
 ### Clients
 
 ```bash
@@ -144,8 +152,55 @@ Commands that connect directly to your UniFi Controller. Use `./ui local` or `./
 ./ui lo clients count               # By connection type
 ./ui lo clients count --by network  # By network/SSID
 ./ui lo clients count --by vendor   # By manufacturer
-./ui lo clients count --by ap       # By access point
-./ui lo clients duplicates          # Find duplicate names
+```
+
+### Devices (Local)
+
+```bash
+# List and get
+./ui lo devices list            # All network devices
+./ui lo devices list -v         # Verbose (channels, load)
+./ui lo devices get UDM-Pro     # Device details
+
+# Actions
+./ui lo devices restart UDM-Pro       # Restart device
+./ui lo devices upgrade Office-AP     # Upgrade firmware
+./ui lo devices locate Office-AP      # Toggle locate LED
+./ui lo devices adopt 70:a7:41:xx:xx  # Adopt device
+```
+
+### Networks
+
+```bash
+./ui lo networks list           # All networks/VLANs
+./ui lo networks list -v        # With DHCP details
+```
+
+### Firewall & Security
+
+```bash
+./ui lo firewall list           # Firewall rules
+./ui lo firewall list --ruleset WAN_IN
+./ui lo firewall groups         # Address/port groups
+./ui lo portfwd list            # Port forwarding rules
+```
+
+### Guest Vouchers
+
+```bash
+./ui lo vouchers list           # All vouchers
+./ui lo vouchers create         # Create voucher
+./ui lo vouchers create -c 10 -d 60   # 10 vouchers, 60 min
+./ui lo vouchers delete CODE    # Delete voucher
+```
+
+### DPI & Statistics
+
+```bash
+./ui lo dpi stats               # Site DPI stats
+./ui lo dpi client my-MacBook   # Client DPI stats
+./ui lo stats daily             # Daily traffic stats
+./ui lo stats hourly            # Hourly traffic stats
 ```
 
 ### Running Config
@@ -163,48 +218,6 @@ Export your network configuration for backup or documentation.
 ./ui lo config show -s wireless     # SSIDs, security
 ./ui lo config show -s firewall     # Firewall rules
 ./ui lo config show -s devices      # Device inventory
-./ui lo config show -s portfwd      # Port forwarding
-./ui lo config show -s dhcp         # DHCP reservations
-./ui lo config show -s routing      # Static routes
-
-# Options
-./ui lo config show --show-secrets  # Include passwords
-./ui lo config show -v              # Verbose (show IDs)
-```
-
-**Example output:**
-
-```
-UniFi Running Configuration
-══════════════════════════════════════════════════════════════════════
-Controller: https://192.168.1.1
-Site: default
-
-┌─ NETWORKS ──────────────────────────────────────────────────────────┐
-
-  Default
-    Purpose:       corporate
-    Subnet:        10.0.1.0/24
-    Gateway:       10.0.1.1
-    DHCP:          Enabled (10.0.1.100 - 10.0.1.254)
-
-  IoT (VLAN 20)
-    Purpose:       iot
-    Subnet:        10.0.20.0/24
-    Isolation:     Yes
-
-└──────────────────────────────────────────────────────────────────────┘
-
-┌─ WIRELESS ──────────────────────────────────────────────────────────┐
-
-  HomeWiFi
-    Network:       Default
-    Security:      WPA2/WPA3 Personal
-    Band:          2.4 GHz + 5 GHz
-
-└──────────────────────────────────────────────────────────────────────┘
-
-Summary: 2 networks, 1 SSIDs, 0 firewall rules, 4 devices
 ```
 
 ---
@@ -231,44 +244,6 @@ All commands support multiple output formats:
 
 # Get client IPs
 ./ui lo clients list -o json | jq -r '.[].ip'
-```
-
-### CSV for Export
-
-```bash
-./ui devices list -o csv > devices.csv
-./ui lo clients list -o csv > clients.csv
-```
-
----
-
-## Client Status
-
-The `./ui lo clients status` command shows comprehensive information:
-
-```
-Client Status: my-MacBook
-────────────────────────────────────────
-  MAC:       AA:BB:CC:DD:EE:FF
-  Vendor:    Apple, Inc.
-  IP:        10.0.1.50
-  Type:      Wireless
-  Network:   Home
-  AP:        Living Room AP
-
-  WiFi Info
-  Signal:    -52 dBm          ← Color-coded (green/yellow/red)
-  Channel:   Ch 36 (AC)
-  Experience: 98%             ← Color-coded
-
-  Connection
-  Uptime:    2d 5h
-  Speed:     ↑866 / ↓866 Mbps
-  Data:      ↑1.2 GB / ↓15.8 GB
-
-  Status
-  Online:    Yes
-  Blocked:   No
 ```
 
 ---
@@ -311,6 +286,7 @@ ui --help            # After pip install
 |----------|-------------|
 | [User Guide](USERGUIDE.md) | Complete documentation with examples |
 | [Roadmap](ROADMAP.md) | Planned features and progress |
+| [Changelog](CHANGELOG.md) | Version history |
 
 ---
 
@@ -326,6 +302,10 @@ ui --help            # After pip install
 | "SSL certificate verify failed" | Set `UNIFI_CONTROLLER_VERIFY_SSL=false` |
 
 ---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
