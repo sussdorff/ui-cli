@@ -1,0 +1,196 @@
+{% extends "main.html" %}
+
+{% block tabs %}{% endblock %}
+{% block content %}{% endblock %}
+
+{% block site_nav %}{% endblock %}
+
+{% block container %}
+<style>
+  .md-main__inner { margin: 0; }
+  .md-content { max-width: none; }
+  .md-typeset { font-size: 1rem; }
+
+  .landing {
+    min-height: calc(100vh - 60px);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    padding: 2rem 4rem;
+    align-items: center;
+    box-sizing: border-box;
+  }
+
+  @media (max-width: 900px) {
+    .landing {
+      grid-template-columns: 1fr;
+      text-align: center;
+      padding: 1rem;
+    }
+    .landing .left { order: 1; }
+    .landing .right { order: 2; }
+  }
+
+  .left {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .left img {
+    max-width: 280px;
+    margin-bottom: 1rem;
+  }
+
+  @media (max-width: 900px) {
+    .left img {
+      max-width: 180px;
+      margin: 0 auto 1rem;
+    }
+  }
+
+  .left h1 {
+    font-size: 3rem;
+    margin: 0;
+    line-height: 1.1;
+  }
+
+  .tagline {
+    font-size: 1.4rem;
+    color: #ffc107;
+    margin: 0.5rem 0;
+    font-weight: bold;
+  }
+
+  .subtitle {
+    font-size: 1.1rem;
+    opacity: 0.8;
+    margin: 0.5rem 0 1.5rem;
+  }
+
+  .buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 900px) {
+    .buttons { justify-content: center; }
+  }
+
+  .buttons a {
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    font-weight: bold;
+  }
+
+  .btn-primary {
+    background: #7c4dff;
+    color: white !important;
+  }
+
+  .btn-secondary {
+    border: 2px solid #7c4dff;
+    color: #7c4dff !important;
+  }
+
+  .right {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .feature {
+    padding: 1.25rem;
+    border-radius: 0.75rem;
+    background: rgba(124, 77, 255, 0.1);
+    border: 1px solid rgba(124, 77, 255, 0.2);
+  }
+
+  .feature .icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .feature h3 {
+    margin: 0 0 0.25rem;
+    font-size: 1rem;
+  }
+
+  .feature p {
+    margin: 0;
+    font-size: 0.85rem;
+    opacity: 0.8;
+  }
+
+  .install-cmd {
+    grid-column: span 2;
+    background: #1a1a2e;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: #4caf50;
+    overflow-x: auto;
+  }
+
+  .compat {
+    grid-column: span 2;
+    text-align: center;
+    font-size: 0.8rem;
+    opacity: 0.6;
+    margin-top: 0.5rem;
+  }
+</style>
+
+<div class="landing">
+  <div class="left">
+    <img src="assets/gorilla.png" alt="UI-CLI">
+    <h1>UI-CLI</h1>
+    <p class="tagline">⚡ Gorilla Powered! ⚡</p>
+    <p class="subtitle">Manage your UniFi infrastructure from the command line</p>
+    <div class="buttons">
+      <a href="getting-started/" class="btn-primary">Get Started</a>
+      <a href="https://github.com/vedanta/ui-cli" class="btn-secondary">GitHub</a>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="feature">
+      <div class="icon">🌐</div>
+      <h3>Cloud API</h3>
+      <p>Multi-site management</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🏠</div>
+      <h3>Local Controller</h3>
+      <p>Direct UDM access</p>
+    </div>
+    <div class="feature">
+      <div class="icon">👥</div>
+      <h3>Clients</h3>
+      <p>List, block, monitor</p>
+    </div>
+    <div class="feature">
+      <div class="icon">📡</div>
+      <h3>Devices</h3>
+      <p>Restart, upgrade, locate</p>
+    </div>
+    <div class="feature">
+      <div class="icon">📊</div>
+      <h3>Analytics</h3>
+      <p>DPI & traffic stats</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🔥</div>
+      <h3>Firewall</h3>
+      <p>Rules & port forwards</p>
+    </div>
+    <div class="install-cmd">
+      pip install git+https://github.com/vedanta/ui-cli.git
+    </div>
+    <p class="compat">UDM • UDM Pro • Cloud Key • Self-hosted</p>
+  </div>
+</div>
+{% endblock %}

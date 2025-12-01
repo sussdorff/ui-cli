@@ -6,6 +6,7 @@ repo_name: vedanta/ui-cli
 
 theme:
   name: material
+  custom_dir: docs/overrides
   logo: assets/gorilla.png
   favicon: assets/gorilla.png
   palette:
