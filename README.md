@@ -26,6 +26,31 @@ UI-CLI is a command-line tool for managing UniFi networks. It supports two modes
 | **Cloud API** | Via `api.ui.com` | Manage multiple sites, view ISP metrics, SD-WAN |
 | **Local API** | Direct to controller | Client management, device control, real-time data |
 
+### Features
+
+**Cloud API (Site Manager)**
+- View and manage multiple sites and controllers from anywhere
+- List all devices across your infrastructure with filtering
+- Monitor ISP performance metrics (latency, speeds, uptime, packet loss)
+- Manage SD-WAN configurations and deployment status
+- Count and group devices by model, status, or controller
+
+**Local Controller API**
+- **Client Management** - List connected clients, filter by wired/wireless/network, view detailed status including signal strength and WiFi experience, block/unblock/reconnect clients
+- **Device Control** - List all network devices, restart or upgrade firmware, toggle locate LED for physical identification, adopt new devices
+- **Network Visibility** - View all networks and VLANs with DHCP configuration, monitor site health (WAN/LAN/WLAN/VPN status), browse recent events and alerts
+- **Security & Firewall** - Inspect firewall rules by ruleset, view address and port groups, list port forwarding rules
+- **Traffic Analytics** - Deep packet inspection (DPI) statistics by application, per-client traffic breakdown, daily and hourly bandwidth reports
+- **Guest Management** - Create hotspot vouchers with custom duration, data limits, and speed caps, list and delete existing vouchers
+- **Configuration Export** - Export running config to YAML/JSON for backup, filter by section (networks, wireless, firewall, devices)
+
+**General**
+- Multiple output formats: table (human-readable), JSON (scripting), CSV (spreadsheets)
+- Works with UDM, UDM Pro, UDM SE, Cloud Key, and self-hosted controllers
+- Automatic controller type detection (UDM vs Cloud Key API paths)
+- Session management with automatic re-authentication
+- SSL verification bypass for self-signed certificates
+
 ---
 
 ## Quick Start
