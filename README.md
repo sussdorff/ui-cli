@@ -305,6 +305,108 @@ ui --help            # After pip install
 
 ---
 
+## Command Reference
+
+```mermaid
+flowchart TD
+    UI[./ui] --> status[status]
+    UI --> version[version]
+    UI --> speedtest[speedtest]
+    UI --> hosts[hosts]
+    UI --> sites[sites]
+    UI --> devices[devices]
+    UI --> isp[isp]
+    UI --> sdwan[sdwan]
+    UI --> local[local / lo]
+
+    %% Cloud API commands
+    hosts --> hosts_list[list]
+    hosts --> hosts_get[get]
+
+    sites --> sites_list[list]
+
+    devices --> devices_list[list]
+    devices --> devices_count[count]
+
+    isp --> isp_metrics[metrics]
+
+    sdwan --> sdwan_list[list]
+    sdwan --> sdwan_get[get]
+    sdwan --> sdwan_status[status]
+
+    %% Local API commands
+    local --> clients[clients]
+    local --> lo_devices[devices]
+    local --> networks[networks]
+    local --> events[events]
+    local --> health[health]
+    local --> firewall[firewall]
+    local --> portfwd[portfwd]
+    local --> vouchers[vouchers]
+    local --> dpi[dpi]
+    local --> stats[stats]
+    local --> config[config]
+
+    clients --> cl_list[list]
+    clients --> cl_all[all]
+    clients --> cl_get[get]
+    clients --> cl_status[status]
+    clients --> cl_block[block]
+    clients --> cl_unblock[unblock]
+    clients --> cl_kick[kick]
+    clients --> cl_count[count]
+    clients --> cl_dup[duplicates]
+
+    lo_devices --> ld_list[list]
+    lo_devices --> ld_get[get]
+    lo_devices --> ld_restart[restart]
+    lo_devices --> ld_upgrade[upgrade]
+    lo_devices --> ld_locate[locate]
+    lo_devices --> ld_adopt[adopt]
+
+    networks --> net_list[list]
+    networks --> net_get[get]
+
+    events --> ev_list[list]
+
+    firewall --> fw_list[list]
+    firewall --> fw_groups[groups]
+
+    portfwd --> pf_list[list]
+
+    vouchers --> v_list[list]
+    vouchers --> v_create[create]
+    vouchers --> v_delete[delete]
+
+    dpi --> dpi_stats[stats]
+    dpi --> dpi_client[client]
+
+    stats --> st_daily[daily]
+    stats --> st_hourly[hourly]
+
+    config --> cfg_show[show]
+
+    %% Styling
+    classDef cloud fill:#e1f5fe,stroke:#01579b
+    classDef local fill:#e8f5e9,stroke:#2e7d32
+    classDef standalone fill:#fff3e0,stroke:#ef6c00
+
+    class status,version,speedtest standalone
+    class hosts,sites,devices,isp,sdwan,hosts_list,hosts_get,sites_list,devices_list,devices_count,isp_metrics,sdwan_list,sdwan_get,sdwan_status cloud
+    class local,clients,lo_devices,networks,events,health,firewall,portfwd,vouchers,dpi,stats,config local
+    class cl_list,cl_all,cl_get,cl_status,cl_block,cl_unblock,cl_kick,cl_count,cl_dup local
+    class ld_list,ld_get,ld_restart,ld_upgrade,ld_locate,ld_adopt local
+    class net_list,net_get,ev_list,fw_list,fw_groups,pf_list local
+    class v_list,v_create,v_delete,dpi_stats,dpi_client,st_daily,st_hourly,cfg_show local
+```
+
+**Legend:**
+- 🟦 **Blue** - Cloud API commands (via `api.ui.com`)
+- 🟩 **Green** - Local Controller commands (direct connection)
+- 🟧 **Orange** - Standalone commands
+
+---
+
 ## Documentation
 
 | Document | Description |
