@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from ui_cli.client import UniFiClient, AuthenticationError
+from ui_cli.client import AuthenticationError, UniFiClient
 
 
 class TestUniFiClient:
