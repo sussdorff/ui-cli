@@ -36,6 +36,11 @@ def get_src_path() -> Path:
     return Path(__file__).parent.parent.parent
 
 
+def get_project_root() -> Path:
+    """Get project root directory (contains .env file)."""
+    return Path(__file__).parent.parent.parent.parent
+
+
 def get_ui_mcp_path() -> Path:
     """Get ui_mcp package path."""
     return get_src_path() / "ui_mcp"
@@ -77,9 +82,12 @@ def print_config_summary(config: dict) -> None:
     """Print MCP server configuration summary."""
     console.print()
     console.print("[dim]Configuration:[/dim]")
-    console.print(f"  command: [cyan]{config.get('command', 'N/A')}[/cyan]")
-    console.print(f"  args:    [cyan]{config.get('args', [])}[/cyan]")
-    console.print(f"  cwd:     [cyan]{config.get('cwd', 'N/A')}[/cyan]")
+    console.print(f"  command:    [cyan]{config.get('command', 'N/A')}[/cyan]")
+    console.print(f"  args:       [cyan]{config.get('args', [])}[/cyan]")
+    console.print(f"  cwd:        [cyan]{config.get('cwd', 'N/A')}[/cyan]")
+    env = config.get('env', {})
+    if 'PYTHONPATH' in env:
+        console.print(f"  PYTHONPATH: [cyan]{env['PYTHONPATH']}[/cyan]")
 
 
 # ==============================================================================
@@ -130,13 +138,21 @@ def create_backup(path: Path) -> Path | None:
 
 
 def generate_mcp_config() -> dict:
-    """Generate ui-cli MCP server configuration."""
+    """Generate ui-cli MCP server configuration.
+
+    Note: cwd is set to project root (not src/) so that .env file is found.
+    PYTHONPATH is set to src/ so that ui_mcp module can be imported.
+    """
+    project_root = get_project_root()
+    src_path = get_src_path()
+
     return {
         "command": sys.executable,
         "args": ["-m", "ui_mcp"],
-        "cwd": str(get_src_path()),
+        "cwd": str(project_root),
         "env": {
-            "PYTHONUNBUFFERED": "1"
+            "PYTHONUNBUFFERED": "1",
+            "PYTHONPATH": str(src_path),
         }
     }
 
@@ -271,15 +287,31 @@ def check() -> None:
     else:
         print_error(f"Python path not found: {python_path}")
 
-    # Validate source path
+    # Validate cwd path (project root with .env)
     cwd_path = Path(ui_cli_config.get("cwd", ""))
     if cwd_path.exists():
-        print_success(f"Source path valid: {cwd_path}")
+        print_success(f"Project root valid: {cwd_path}")
+        # Check for .env file
+        env_file = cwd_path / ".env"
+        if env_file.exists():
+            print_success(f".env file found")
+        else:
+            print_warning(f".env file not found at {env_file}")
     else:
-        print_error(f"Source path not found: {cwd_path}")
+        print_error(f"Project root not found: {cwd_path}")
+
+    # Validate PYTHONPATH (src directory)
+    env_vars = ui_cli_config.get("env", {})
+    pythonpath = env_vars.get("PYTHONPATH", "")
+    src_path = Path(pythonpath) if pythonpath else None
+
+    if src_path and src_path.exists():
+        print_success(f"PYTHONPATH valid: {src_path}")
+    elif pythonpath:
+        print_error(f"PYTHONPATH not found: {pythonpath}")
 
     # Check ui_mcp module
-    ui_mcp_path = cwd_path / "ui_mcp" if cwd_path.exists() else get_ui_mcp_path()
+    ui_mcp_path = src_path / "ui_mcp" if src_path and src_path.exists() else get_ui_mcp_path()
     if ui_mcp_path.exists() and (ui_mcp_path / "__init__.py").exists():
         print_success("ui_mcp module found")
     else:
