@@ -196,6 +196,7 @@ def site_dpi(
     ] = 20,
 ) -> None:
     """Show site-level DPI statistics."""
+    from ui_cli.commands.local.utils import run_with_spinner
 
     async def _dpi():
         client = UniFiLocalClient()
@@ -204,7 +205,7 @@ def site_dpi(
         return dpi_data, dpi_enabled
 
     try:
-        dpi_data, dpi_enabled = asyncio.run(_dpi())
+        dpi_data, dpi_enabled = run_with_spinner(_dpi(), "Fetching DPI stats...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)
@@ -305,7 +306,7 @@ def client_dpi(
         return dpi_data, mac, dpi_enabled
 
     try:
-        dpi_data, mac, dpi_enabled = asyncio.run(_dpi())
+        dpi_data, mac, dpi_enabled = run_with_spinner(_dpi(), "Fetching client DPI...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)

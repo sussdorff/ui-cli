@@ -5,6 +5,7 @@ from typing import Annotated, Any
 
 import typer
 
+from ui_cli.commands.local.utils import run_with_spinner
 from ui_cli.local_client import LocalAPIError, UniFiLocalClient
 from ui_cli.output import (
     OutputFormat,
@@ -148,7 +149,7 @@ def list_devices(
         return await client.get_devices()
 
     try:
-        devices = asyncio.run(_list())
+        devices = run_with_spinner(_list(), "Fetching devices...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)
@@ -277,7 +278,7 @@ def get_device(
         return find_device(devices, identifier)
 
     try:
-        device = asyncio.run(_get())
+        device = run_with_spinner(_get(), "Finding device...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)
@@ -382,7 +383,7 @@ def restart_device(
         return find_device(devices, identifier)
 
     try:
-        device = asyncio.run(_get_device())
+        device = run_with_spinner(_get_device(), "Finding device...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)
@@ -405,7 +406,7 @@ def restart_device(
         return await client.restart_device(mac)
 
     try:
-        success = asyncio.run(_restart())
+        success = run_with_spinner(_restart(), "Restarting device...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)
@@ -440,7 +441,7 @@ def upgrade_device(
         return find_device(devices, identifier)
 
     try:
-        device = asyncio.run(_get_device())
+        device = run_with_spinner(_get_device(), "Finding device...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)
@@ -471,7 +472,7 @@ def upgrade_device(
         return await client.upgrade_device(mac)
 
     try:
-        success = asyncio.run(_upgrade())
+        success = run_with_spinner(_upgrade(), "Starting upgrade...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)
@@ -500,7 +501,7 @@ def locate_device(
         return find_device(devices, identifier)
 
     try:
-        device = asyncio.run(_get_device())
+        device = run_with_spinner(_get_device(), "Finding device...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)
@@ -517,7 +518,7 @@ def locate_device(
         return await client.locate_device(mac, enabled=not off)
 
     try:
-        success = asyncio.run(_locate())
+        success = run_with_spinner(_locate(), "Setting locate LED...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)
@@ -554,7 +555,7 @@ def adopt_device(
         return await client.adopt_device(identifier)
 
     try:
-        success = asyncio.run(_adopt())
+        success = run_with_spinner(_adopt(), "Adopting device...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)

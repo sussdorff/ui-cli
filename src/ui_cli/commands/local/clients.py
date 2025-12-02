@@ -5,6 +5,7 @@ from typing import Annotated
 
 import typer
 
+from ui_cli.commands.local.utils import run_with_spinner
 from ui_cli.local_client import (
     LocalAPIError,
     LocalAuthenticationError,
@@ -191,9 +192,12 @@ def list_clients(
     ] = False,
 ) -> None:
     """List active (connected) clients."""
-    try:
+    async def _list():
         client = UniFiLocalClient()
-        clients = asyncio.run(client.list_clients())
+        return await client.list_clients()
+
+    try:
+        clients = run_with_spinner(_list(), "Fetching clients...")
     except Exception as e:
         handle_error(e)
         return
@@ -237,9 +241,12 @@ def list_all_clients(
     ] = False,
 ) -> None:
     """List all known clients (including offline)."""
-    try:
+    async def _list():
         client = UniFiLocalClient()
-        clients = asyncio.run(client.list_all_clients())
+        return await client.list_all_clients()
+
+    try:
+        clients = run_with_spinner(_list(), "Fetching all clients...")
     except Exception as e:
         handle_error(e)
         return
@@ -281,17 +288,16 @@ def get_client(
         console.print("  ./ui lo clients get my-iPhone")
         console.print("  ./ui lo clients get AA:BB:CC:DD:EE:FF")
         raise typer.Exit(1)
-    try:
+    async def _get():
         api_client = UniFiLocalClient()
+        mac, name = await resolve_client_identifier(api_client, identifier)
+        if not mac:
+            return None, None
+        client_data = await api_client.get_client(mac)
+        return client_data, name
 
-        async def _get():
-            mac, name = await resolve_client_identifier(api_client, identifier)
-            if not mac:
-                return None, None
-            client_data = await api_client.get_client(mac)
-            return client_data, name
-
-        client_data, resolved_name = asyncio.run(_get())
+    try:
+        client_data, resolved_name = run_with_spinner(_get(), "Finding client...")
     except Exception as e:
         handle_error(e)
         return
@@ -369,31 +375,30 @@ def client_status(
         console.print("  ./ui lo clients status AA:BB:CC:DD:EE:FF")
         raise typer.Exit(1)
 
-    try:
+    async def _get_status():
         api_client = UniFiLocalClient()
+        mac, name = await resolve_client_identifier(api_client, identifier)
+        if not mac:
+            return None, None, None, None
+        # Get from all clients (includes offline) for block status
+        all_clients = await api_client.list_all_clients()
+        client_info = None
+        for c in all_clients:
+            if c.get("mac", "").lower() == mac.lower():
+                client_info = c
+                break
+        # Also check active clients for online status and live data
+        active_clients = await api_client.list_clients()
+        active_info = None
+        for c in active_clients:
+            if c.get("mac", "").lower() == mac.lower():
+                active_info = c
+                break
+        is_online = active_info is not None
+        return client_info, active_info, name, is_online
 
-        async def _get_status():
-            mac, name = await resolve_client_identifier(api_client, identifier)
-            if not mac:
-                return None, None, None, None
-            # Get from all clients (includes offline) for block status
-            all_clients = await api_client.list_all_clients()
-            client_info = None
-            for c in all_clients:
-                if c.get("mac", "").lower() == mac.lower():
-                    client_info = c
-                    break
-            # Also check active clients for online status and live data
-            active_clients = await api_client.list_clients()
-            active_info = None
-            for c in active_clients:
-                if c.get("mac", "").lower() == mac.lower():
-                    active_info = c
-                    break
-            is_online = active_info is not None
-            return client_info, active_info, name, is_online
-
-        client_info, active_info, resolved_name, is_online = asyncio.run(_get_status())
+    try:
+        client_info, active_info, resolved_name, is_online = run_with_spinner(_get_status(), "Checking status...")
     except Exception as e:
         handle_error(e)
         return
@@ -569,11 +574,13 @@ def block_client(
         console.print("  ./ui lo clients block AA:BB:CC:DD:EE:FF -y")
         raise typer.Exit(1)
 
-    api_client = UniFiLocalClient()
-
     # Resolve identifier to MAC
+    async def _resolve():
+        api_client = UniFiLocalClient()
+        return await resolve_client_identifier(api_client, identifier)
+
     try:
-        mac, name = asyncio.run(resolve_client_identifier(api_client, identifier))
+        mac, name = run_with_spinner(_resolve(), "Finding client...")
     except Exception as e:
         handle_error(e)
         return
@@ -591,8 +598,12 @@ def block_client(
             raise typer.Exit(0)
 
     # Execute action
+    async def _block():
+        api_client = UniFiLocalClient()
+        return await api_client.block_client(mac)
+
     try:
-        success = asyncio.run(api_client.block_client(mac))
+        success = run_with_spinner(_block(), "Blocking client...")
     except Exception as e:
         handle_error(e)
         return
@@ -639,11 +650,13 @@ def unblock_client(
         console.print("  ./ui lo clients unblock AA:BB:CC:DD:EE:FF -y")
         raise typer.Exit(1)
 
-    api_client = UniFiLocalClient()
-
     # Resolve identifier to MAC
+    async def _resolve():
+        api_client = UniFiLocalClient()
+        return await resolve_client_identifier(api_client, identifier)
+
     try:
-        mac, name = asyncio.run(resolve_client_identifier(api_client, identifier))
+        mac, name = run_with_spinner(_resolve(), "Finding client...")
     except Exception as e:
         handle_error(e)
         return
@@ -661,8 +674,12 @@ def unblock_client(
             raise typer.Exit(0)
 
     # Execute action
+    async def _unblock():
+        api_client = UniFiLocalClient()
+        return await api_client.unblock_client(mac)
+
     try:
-        success = asyncio.run(api_client.unblock_client(mac))
+        success = run_with_spinner(_unblock(), "Unblocking client...")
     except Exception as e:
         handle_error(e)
         return
@@ -709,11 +726,13 @@ def kick_client(
         console.print("  ./ui lo clients kick AA:BB:CC:DD:EE:FF -y")
         raise typer.Exit(1)
 
-    api_client = UniFiLocalClient()
-
     # Resolve identifier to MAC
+    async def _resolve():
+        api_client = UniFiLocalClient()
+        return await resolve_client_identifier(api_client, identifier)
+
     try:
-        mac, name = asyncio.run(resolve_client_identifier(api_client, identifier))
+        mac, name = run_with_spinner(_resolve(), "Finding client...")
     except Exception as e:
         handle_error(e)
         return
@@ -731,8 +750,12 @@ def kick_client(
             raise typer.Exit(0)
 
     # Execute action
+    async def _kick():
+        api_client = UniFiLocalClient()
+        return await api_client.kick_client(mac)
+
     try:
-        success = asyncio.run(api_client.kick_client(mac))
+        success = run_with_spinner(_kick(), "Kicking client...")
     except Exception as e:
         handle_error(e)
         return
@@ -795,12 +818,15 @@ def count_clients(
     ] = OutputFormat.TABLE,
 ) -> None:
     """Count clients grouped by category (online only by default)."""
-    try:
+    async def _count():
         api_client = UniFiLocalClient()
         if include_offline:
-            clients = asyncio.run(api_client.list_all_clients())
+            return await api_client.list_all_clients()
         else:
-            clients = asyncio.run(api_client.list_clients())
+            return await api_client.list_clients()
+
+    try:
+        clients = run_with_spinner(_count(), "Counting clients...")
     except Exception as e:
         handle_error(e)
         return
@@ -869,9 +895,12 @@ def find_duplicates(
 
     Shows connection type (wired/wireless) to help distinguish.
     """
-    try:
+    async def _list():
         api_client = UniFiLocalClient()
-        clients = asyncio.run(api_client.list_all_clients())
+        return await api_client.list_all_clients()
+
+    try:
+        clients = run_with_spinner(_list(), "Finding duplicates...")
     except Exception as e:
         handle_error(e)
         return

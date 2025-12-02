@@ -74,6 +74,7 @@ nav:
     - Overview: commands/index.md
     - Cloud API: commands/cloud.md
     - Local Controller: commands/local.md
+    - Claude Desktop: commands/mcp.md
   - Examples: examples.md
   - Troubleshooting: troubleshooting.md
   - Changelog: changelog.md

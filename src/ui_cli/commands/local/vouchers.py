@@ -110,13 +110,14 @@ def list_vouchers(
     ] = OutputFormat.TABLE,
 ) -> None:
     """List all vouchers."""
+    from ui_cli.commands.local.utils import run_with_spinner
 
     async def _list():
         client = UniFiLocalClient()
         return await client.get_vouchers()
 
     try:
-        vouchers = asyncio.run(_list())
+        vouchers = run_with_spinner(_list(), "Fetching vouchers...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)
@@ -248,7 +249,7 @@ def create_voucher(
         )
 
     try:
-        result = asyncio.run(_create())
+        result = run_with_spinner(_create(), "Creating voucher...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)
@@ -268,7 +269,7 @@ def create_voucher(
         return [v for v in vouchers if v.get("create_time", 0) >= create_time][:count]
 
     try:
-        created = asyncio.run(_fetch())
+        created = run_with_spinner(_fetch(), "Fetching created vouchers...")
     except LocalAPIError:
         created = []
 
@@ -332,7 +333,7 @@ def revoke_voucher(
         return await client.revoke_voucher(voucher_id)
 
     try:
-        success = asyncio.run(_revoke())
+        success = run_with_spinner(_revoke(), "Revoking voucher...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)
@@ -362,7 +363,7 @@ def delete_all_vouchers(
         return await client.get_vouchers()
 
     try:
-        vouchers = asyncio.run(_get_vouchers())
+        vouchers = run_with_spinner(_get_vouchers(), "Fetching vouchers...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)
@@ -401,7 +402,7 @@ def delete_all_vouchers(
         return deleted
 
     try:
-        deleted = asyncio.run(_delete_all())
+        deleted = run_with_spinner(_delete_all(), "Deleting vouchers...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)

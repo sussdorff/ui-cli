@@ -13,6 +13,19 @@ import httpx
 from ui_cli.config import settings
 
 
+def _get_quick_timeout() -> int | None:
+    """Get quick timeout from local commands if set.
+
+    This allows --quick flag to propagate to the client without
+    modifying every command file.
+    """
+    try:
+        from ui_cli.commands.local.utils import get_timeout
+        return get_timeout()
+    except ImportError:
+        return None
+
+
 class LocalAPIError(Exception):
     """Base exception for local API errors."""
 
@@ -50,13 +63,20 @@ class UniFiLocalClient:
         password: str | None = None,
         site: str | None = None,
         verify_ssl: bool | None = None,
+        timeout: int | None = None,
     ):
         self.controller_url = (controller_url or settings.controller_url).rstrip("/")
         self.username = username or settings.controller_username
         self.password = password or settings.controller_password
         self.site = site or settings.controller_site
         self.verify_ssl = verify_ssl if verify_ssl is not None else settings.controller_verify_ssl
-        self.timeout = settings.timeout
+
+        # Timeout priority: explicit param > --quick flag > settings
+        if timeout is not None:
+            self.timeout = timeout
+        else:
+            quick_timeout = _get_quick_timeout()
+            self.timeout = quick_timeout if quick_timeout is not None else settings.timeout
 
         # Session state
         self._cookies: dict[str, str] = {}

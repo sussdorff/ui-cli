@@ -72,13 +72,14 @@ def daily_stats(
     ] = OutputFormat.TABLE,
 ) -> None:
     """Show daily traffic statistics."""
+    from ui_cli.commands.local.utils import run_with_spinner
 
     async def _stats():
         client = UniFiLocalClient()
         return await client.get_daily_stats(days=days)
 
     try:
-        stats = asyncio.run(_stats())
+        stats = run_with_spinner(_stats(), "Fetching daily stats...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)
@@ -158,13 +159,14 @@ def hourly_stats(
     ] = OutputFormat.TABLE,
 ) -> None:
     """Show hourly traffic statistics."""
+    from ui_cli.commands.local.utils import run_with_spinner
 
     async def _stats():
         client = UniFiLocalClient()
         return await client.get_hourly_stats(hours=hours)
 
     try:
-        stats = asyncio.run(_stats())
+        stats = run_with_spinner(_stats(), "Fetching hourly stats...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)

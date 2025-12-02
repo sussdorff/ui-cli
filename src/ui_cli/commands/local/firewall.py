@@ -105,13 +105,14 @@ def list_rules(
     ] = False,
 ) -> None:
     """List firewall rules."""
+    from ui_cli.commands.local.utils import run_with_spinner
 
     async def _list():
         client = UniFiLocalClient()
         return await client.get_firewall_rules()
 
     try:
-        rules = asyncio.run(_list())
+        rules = run_with_spinner(_list(), "Fetching firewall rules...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)
@@ -216,13 +217,14 @@ def list_groups(
     ] = OutputFormat.TABLE,
 ) -> None:
     """List firewall groups (address and port groups)."""
+    from ui_cli.commands.local.utils import run_with_spinner
 
     async def _list():
         client = UniFiLocalClient()
         return await client.get_firewall_groups()
 
     try:
-        groups = asyncio.run(_list())
+        groups = run_with_spinner(_list(), "Fetching firewall groups...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)

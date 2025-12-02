@@ -63,13 +63,14 @@ def list_networks(
     ] = False,
 ) -> None:
     """List all networks."""
+    from ui_cli.commands.local.utils import run_with_spinner
 
     async def _list():
         client = UniFiLocalClient()
         return await client.get_networks()
 
     try:
-        networks = asyncio.run(_list())
+        networks = run_with_spinner(_list(), "Fetching networks...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)
@@ -160,7 +161,7 @@ def get_network(
         return None
 
     try:
-        network = asyncio.run(_get())
+        network = run_with_spinner(_get(), "Finding network...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)

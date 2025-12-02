@@ -67,13 +67,14 @@ def list_port_forwards(
     ] = True,
 ) -> None:
     """List port forwarding rules."""
+    from ui_cli.commands.local.utils import run_with_spinner
 
     async def _list():
         client = UniFiLocalClient()
         return await client.get_port_forwards()
 
     try:
-        rules = asyncio.run(_list())
+        rules = run_with_spinner(_list(), "Fetching port forwards...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)

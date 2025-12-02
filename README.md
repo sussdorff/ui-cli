@@ -152,6 +152,14 @@ Commands that use the UniFi Site Manager API (`api.ui.com`).
 
 Commands that connect directly to your UniFi Controller. Use `./ui local` or `./ui lo`.
 
+### Timeout Options
+
+```bash
+./ui lo health                  # Default 15s timeout
+./ui lo -q health               # Quick mode (5s timeout)
+./ui lo --timeout 60 health     # Custom timeout
+```
+
 ### Health & Monitoring
 
 ```bash
@@ -329,6 +337,18 @@ All commands support multiple output formats:
 
 # Get client IPs
 ./ui lo clients list -o json | jq -r '.[].ip'
+```
+
+### CI/CD Usage
+
+Spinners are automatically disabled when `CI=true` or `NO_COLOR` is set:
+
+```bash
+# Disable spinner explicitly
+UNIFI_NO_SPINNER=1 ./ui lo health -o json
+
+# In GitHub Actions (CI=true is set automatically)
+./ui lo clients count -o json
 ```
 
 ---
@@ -539,6 +559,7 @@ docker run ui-cli    # Using Docker
 | "Controller URL not configured" | Add `UNIFI_CONTROLLER_URL` to `.env` |
 | "Invalid username or password" | Verify credentials work in UniFi web UI |
 | "SSL certificate verify failed" | Set `UNIFI_CONTROLLER_VERIFY_SSL=false` |
+| "Connection timeout" (local) | Use `--timeout 60` for slow connections |
 
 ---
 

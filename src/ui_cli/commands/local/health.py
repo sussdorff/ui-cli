@@ -1,10 +1,10 @@
 """Site health command for local controller."""
 
-import asyncio
 from typing import Annotated, Any
 
 import typer
 
+from ui_cli.commands.local.utils import run_with_spinner
 from ui_cli.local_client import LocalAPIError, UniFiLocalClient
 from ui_cli.output import OutputFormat, console, output_json, print_error
 
@@ -110,7 +110,7 @@ def health(
         return await client.get_health()
 
     try:
-        health_data = asyncio.run(_health())
+        health_data = run_with_spinner(_health(), "Checking health...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)

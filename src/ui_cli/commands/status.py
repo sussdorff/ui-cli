@@ -6,6 +6,7 @@ from typing import Annotated
 
 import httpx
 import typer
+from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from ui_cli import __version__
 from ui_cli.config import settings
@@ -16,6 +17,9 @@ from ui_cli.local_client import (
     UniFiLocalClient,
 )
 from ui_cli.output import OutputFormat, console, output_json
+
+# Timeout for status checks (seconds)
+STATUS_CHECK_TIMEOUT = 10
 
 
 app = typer.Typer(help="Check API connectivity and authentication status")
@@ -58,7 +62,7 @@ async def check_site_manager_api(verbose: bool = False) -> dict:
     }
 
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
+        async with httpx.AsyncClient(timeout=STATUS_CHECK_TIMEOUT) as client:
             # Test connection and auth with hosts endpoint
             start = time.perf_counter()
             response = await client.get(
@@ -147,7 +151,7 @@ async def check_local_controller(verbose: bool = False) -> dict:
         return result
 
     try:
-        client = UniFiLocalClient()
+        client = UniFiLocalClient(timeout=STATUS_CHECK_TIMEOUT)
         start = time.perf_counter()
         await client.login()
         elapsed_ms = (time.perf_counter() - start) * 1000
@@ -322,6 +326,33 @@ async def check_all_status(verbose: bool = False) -> tuple[dict, dict]:
     return cloud_status, local_status
 
 
+async def check_with_spinner(verbose: bool = False) -> tuple[dict, dict]:
+    """Check both APIs with progress spinner."""
+    cloud_status = None
+    local_status = None
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[cyan]{task.description}"),
+        console=console,
+        transient=True,
+    ) as progress:
+        # Check Cloud API
+        task = progress.add_task("Checking Cloud API...", total=None)
+        cloud_status = await check_site_manager_api(verbose=verbose)
+        progress.remove_task(task)
+
+        # Check Local Controller
+        if settings.controller_url:
+            task = progress.add_task("Checking Local Controller...", total=None)
+            local_status = await check_local_controller(verbose=verbose)
+            progress.remove_task(task)
+        else:
+            local_status = await check_local_controller(verbose=verbose)
+
+    return cloud_status, local_status
+
+
 @app.callback(invoke_without_command=True)
 def status(
     ctx: typer.Context,
@@ -344,8 +375,8 @@ def status(
 ) -> None:
     """Check API connectivity and authentication status."""
 
-    # Run async checks
-    cloud_status, local_status = asyncio.run(check_all_status(verbose=verbose))
+    # Run async checks with spinner
+    cloud_status, local_status = asyncio.run(check_with_spinner(verbose=verbose))
 
     if output == OutputFormat.JSON:
         result = {

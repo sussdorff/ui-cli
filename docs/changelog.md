@@ -4,6 +4,44 @@ All notable changes to UI-CLI are documented here.
 
 ---
 
+## [0.3.0] - December 2, 2024
+
+### Highlights
+
+🤖 **Claude Desktop Integration** - Manage your UniFi network using natural language!
+
+### Added
+
+**MCP Server v2 (Tools Layer Architecture)**
+
+- 16 AI-optimized tools for Claude Desktop integration
+- Natural language network management
+- `./ui mcp install` - One-command setup
+- `./ui mcp check` - Verify installation
+- `./ui mcp show` - View configuration
+
+**Available Tools**
+
+| Category | Tools |
+|----------|-------|
+| Status & Health | `network_status`, `network_health`, `internet_speed`, `run_speedtest`, `isp_performance` |
+| Counts & Lists | `client_count`, `device_list`, `network_list` |
+| Lookups | `find_client`, `find_device`, `client_status` |
+| Actions | `block_client`, `unblock_client`, `kick_client`, `restart_device`, `create_voucher` |
+
+### Architecture
+
+- Subprocess-based tools layer for consistent behavior
+- CLI remains single source of truth
+- JSON output for all action commands
+
+### Documentation
+
+- Claude Desktop integration guide
+- MCP architecture documentation
+
+---
+
 ## [0.2.0] - December 1, 2024
 
 ### Highlights
