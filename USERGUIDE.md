@@ -9,6 +9,7 @@ Complete reference for managing UniFi networks from the command line.
 - [Setup](#setup)
 - [Cloud API](#cloud-api)
 - [Local Controller](#local-controller)
+- [Claude Desktop (MCP)](#claude-desktop-mcp)
 - [Output Formats](#output-formats)
 - [Quick Reference](#quick-reference)
 - [Troubleshooting](#troubleshooting)
@@ -399,6 +400,87 @@ Export your network configuration for backup or documentation.
 
 ---
 
+## Claude Desktop (MCP)
+
+Control your UniFi network using natural language through Claude Desktop.
+
+### Setup
+
+```bash
+# Install MCP server to Claude Desktop
+./ui mcp install
+
+# Verify installation
+./ui mcp check
+
+# Restart Claude Desktop to activate
+```
+
+### Example Prompts
+
+Just ask Claude naturally:
+
+- "How many devices are connected to my network?"
+- "What's my network health status?"
+- "What's my internet speed?"
+- "Find my iPhone"
+- "Is the kids iPad blocked?"
+- "Block the kids iPad"
+- "Unblock the kids iPad"
+- "Restart the garage access point"
+- "Create a guest WiFi voucher for 24 hours"
+
+### Available Tools
+
+| Category | Tools |
+|----------|-------|
+| **Status** | `network_status`, `network_health`, `internet_speed`, `run_speedtest`, `isp_performance` |
+| **Counts** | `client_count`, `device_list`, `network_list` |
+| **Lookups** | `find_client`, `find_device`, `client_status` |
+| **Actions** | `block_client`, `unblock_client`, `kick_client`, `restart_device`, `create_voucher` |
+
+### MCP Commands
+
+```bash
+./ui mcp install    # Add to Claude Desktop config
+./ui mcp check      # Verify setup
+./ui mcp show       # View current config
+./ui mcp remove     # Remove from Claude Desktop
+```
+
+### How It Works
+
+```
+┌─────────────────┐
+│  Claude Desktop │
+└────────┬────────┘
+         │ MCP Protocol
+         ▼
+┌─────────────────┐
+│   MCP Server    │  ← 16 tools with friendly names
+└────────┬────────┘
+         │ subprocess
+         ▼
+┌─────────────────┐
+│    UI CLI       │  ← All logic lives here
+└─────────────────┘
+```
+
+The MCP server is a thin wrapper that calls CLI commands. This ensures consistent behavior between terminal and Claude Desktop.
+
+### Troubleshooting MCP
+
+| Issue | Solution |
+|-------|----------|
+| "Conda environment not found" | Run `./ui mcp install` after activating conda env |
+| "No output" in Claude Desktop | Restart Claude Desktop after config changes |
+| Tools not appearing | Check `./ui mcp check` for errors |
+| Slow responses | Some operations (speedtest) take 30-60s |
+
+For more details, see [MCP Documentation](src/ui_mcp/README.md).
+
+---
+
 ## Output Formats
 
 All commands support multiple formats via `-o`:
@@ -473,6 +555,15 @@ All commands support multiple formats via `-o`:
 | `./ui lo stats daily` | Daily traffic stats |
 | `./ui lo stats hourly` | Hourly traffic stats |
 | `./ui lo config show` | Running configuration |
+
+### MCP Commands
+
+| Command | Description |
+|---------|-------------|
+| `./ui mcp install` | Install MCP server to Claude Desktop |
+| `./ui mcp check` | Verify MCP installation |
+| `./ui mcp show` | Show Claude Desktop config |
+| `./ui mcp remove` | Remove MCP server from Claude Desktop |
 
 ### Common Options
 
