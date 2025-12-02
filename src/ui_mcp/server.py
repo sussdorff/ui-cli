@@ -154,7 +154,7 @@ async def network_list() -> str:
 
     Returns all networks with VLAN IDs, subnets, and DHCP settings.
     """
-    result = run_cli(["lo", "networks"])
+    result = run_cli(["lo", "networks", "list"])
     if "error" in result:
         return format_result(result)
 

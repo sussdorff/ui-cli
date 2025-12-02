@@ -92,16 +92,21 @@ def run_cli(
         return {"error": True, "message": str(e)}
 
 
-def format_result(data: dict, summary: str | None = None) -> str:
-    """Format result dict as JSON string for MCP response.
+def format_result(data: dict | list, summary: str | None = None) -> str:
+    """Format result dict/list as JSON string for MCP response.
 
     Args:
-        data: Result data from CLI
+        data: Result data from CLI (dict or list)
         summary: Optional human-readable summary to prepend
 
     Returns:
         JSON string suitable for MCP tool response
     """
-    if summary and "error" not in data:
-        data = {"summary": summary, **data}
-    return json.dumps(data, indent=2)
+    if isinstance(data, list):
+        # Wrap list in dict with summary
+        output = {"summary": summary, "data": data, "count": len(data)} if summary else {"data": data, "count": len(data)}
+    elif summary and "error" not in data:
+        output = {"summary": summary, **data}
+    else:
+        output = data
+    return json.dumps(output, indent=2)
