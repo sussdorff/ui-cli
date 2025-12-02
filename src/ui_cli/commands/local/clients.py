@@ -550,6 +550,10 @@ def block_client(
         bool,
         typer.Option("--yes", "-y", help="Skip confirmation prompt"),
     ] = False,
+    output: Annotated[
+        OutputFormat,
+        typer.Option("--output", "-o", help="Output format"),
+    ] = OutputFormat.TABLE,
 ) -> None:
     """Block a client from connecting.
 
@@ -594,9 +598,15 @@ def block_client(
         return
 
     if success:
-        console.print(f"[green]Blocked client:[/green] {display}")
+        if output == OutputFormat.JSON:
+            output_json({"success": True, "action": "blocked", "name": name, "mac": mac})
+        else:
+            console.print(f"[green]Blocked client:[/green] {display}")
     else:
-        console.print(f"[red]Failed to block client:[/red] {display}")
+        if output == OutputFormat.JSON:
+            output_json({"success": False, "action": "blocked", "name": name, "mac": mac, "error": "API call failed"})
+        else:
+            console.print(f"[red]Failed to block client:[/red] {display}")
         raise typer.Exit(1)
 
 
@@ -610,6 +620,10 @@ def unblock_client(
         bool,
         typer.Option("--yes", "-y", help="Skip confirmation prompt"),
     ] = False,
+    output: Annotated[
+        OutputFormat,
+        typer.Option("--output", "-o", help="Output format"),
+    ] = OutputFormat.TABLE,
 ) -> None:
     """Unblock a previously blocked client.
 
@@ -654,9 +668,15 @@ def unblock_client(
         return
 
     if success:
-        console.print(f"[green]Unblocked client:[/green] {display}")
+        if output == OutputFormat.JSON:
+            output_json({"success": True, "action": "unblocked", "name": name, "mac": mac})
+        else:
+            console.print(f"[green]Unblocked client:[/green] {display}")
     else:
-        console.print(f"[red]Failed to unblock client:[/red] {display}")
+        if output == OutputFormat.JSON:
+            output_json({"success": False, "action": "unblocked", "name": name, "mac": mac, "error": "API call failed"})
+        else:
+            console.print(f"[red]Failed to unblock client:[/red] {display}")
         raise typer.Exit(1)
 
 
@@ -670,6 +690,10 @@ def kick_client(
         bool,
         typer.Option("--yes", "-y", help="Skip confirmation prompt"),
     ] = False,
+    output: Annotated[
+        OutputFormat,
+        typer.Option("--output", "-o", help="Output format"),
+    ] = OutputFormat.TABLE,
 ) -> None:
     """Kick (disconnect) a client, forcing reconnection.
 
@@ -714,9 +738,15 @@ def kick_client(
         return
 
     if success:
-        console.print(f"[green]Kicked client:[/green] {display}")
+        if output == OutputFormat.JSON:
+            output_json({"success": True, "action": "kicked", "name": name, "mac": mac})
+        else:
+            console.print(f"[green]Kicked client:[/green] {display}")
     else:
-        console.print(f"[red]Failed to kick client:[/red] {display}")
+        if output == OutputFormat.JSON:
+            output_json({"success": False, "action": "kicked", "name": name, "mac": mac, "error": "API call failed"})
+        else:
+            console.print(f"[red]Failed to kick client:[/red] {display}")
         raise typer.Exit(1)
 
 

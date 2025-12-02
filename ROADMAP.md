@@ -103,23 +103,70 @@ UNIFI_CONTROLLER_VERIFY_SSL=false
 
 ---
 
-## Milestone 3: Advanced Features (PLANNED)
+## Milestone 3: Claude Desktop Integration (COMPLETE)
 
-### Phase 3.1 - Backup & Restore
+MCP (Model Context Protocol) server for natural language network management through Claude Desktop.
+
+### Setup Commands
+
+| Command | Description |
+|---------|-------------|
+| `./ui mcp install` | Install MCP server to Claude Desktop |
+| `./ui mcp check` | Verify MCP installation |
+| `./ui mcp show` | Show Claude Desktop config |
+| `./ui mcp remove` | Remove MCP server from Claude Desktop |
+
+### MCP Tools (16 total)
+
+| Category | Tools |
+|----------|-------|
+| **Status** | `network_status`, `network_health`, `internet_speed`, `run_speedtest`, `isp_performance` |
+| **Counts** | `client_count`, `device_list`, `network_list` |
+| **Lookups** | `find_client`, `find_device`, `client_status` |
+| **Actions** | `block_client`, `unblock_client`, `kick_client`, `restart_device`, `create_voucher` |
+
+### Architecture
+
+```
+Claude Desktop → MCP Server → subprocess → UI CLI → UniFi API
+```
+
+The MCP server is a thin tools layer that calls CLI commands via subprocess. This ensures:
+- Consistent behavior between terminal and Claude Desktop
+- Single source of truth (all logic in CLI)
+- Easy debugging (test by running CLI directly)
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `src/ui_mcp/server.py` | FastMCP server with 16 tool definitions |
+| `src/ui_mcp/cli_runner.py` | Subprocess wrapper for CLI calls |
+| `src/ui_mcp/README.md` | User documentation |
+| `src/ui_mcp/ARCHITECTURE.md` | Technical design docs |
+| `src/ui_cli/commands/mcp.py` | MCP management CLI commands |
+| `scripts/mcp-server.sh` | Wrapper script for Claude Desktop |
+| `scripts/test-mcp-tools.py` | Tool validation test suite |
+
+---
+
+## Milestone 4: Advanced Features (PLANNED)
+
+### Phase 4.1 - Backup & Restore
 | Command | Description |
 |---------|-------------|
 | `./ui lo backup create` | Create site backup |
 | `./ui lo backup list` | List available backups |
 | `./ui lo backup download <ID>` | Download backup file |
 
-### Phase 3.2 - Notifications & Alerts
+### Phase 4.2 - Notifications & Alerts
 | Command | Description |
 |---------|-------------|
 | `./ui lo alarms list` | List active alarms |
 | `./ui lo alarms archive <ID>` | Archive an alarm |
 | `./ui lo alarms archive-all` | Archive all alarms |
 
-### Phase 3.3 - Advanced Configuration
+### Phase 4.3 - Advanced Configuration
 | Command | Description |
 |---------|-------------|
 | `./ui lo wlan list` | List wireless networks |
@@ -127,7 +174,7 @@ UNIFI_CONTROLLER_VERIFY_SSL=false
 | `./ui lo wlan delete <ID>` | Delete wireless network |
 | `./ui lo network create` | Create network/VLAN |
 
-### Phase 3.4 - Multi-Site Management
+### Phase 4.4 - Multi-Site Management
 | Command | Description |
 |---------|-------------|
 | `./ui lo sites list` | List sites on controller |
@@ -155,6 +202,7 @@ UNIFI_CONTROLLER_VERIFY_SSL=false
 
 ## Files
 
+### Core CLI
 | File | Purpose | Status |
 |------|---------|--------|
 | `src/ui_cli/client.py` | Site Manager API client | Complete |
@@ -172,3 +220,14 @@ UNIFI_CONTROLLER_VERIFY_SSL=false
 | `src/ui_cli/commands/local/stats.py` | Statistics commands | Complete |
 | `src/ui_cli/commands/local/health.py` | Health commands | Complete |
 | `tests/` | Test suite (87 tests) | Complete |
+
+### MCP Server
+| File | Purpose | Status |
+|------|---------|--------|
+| `src/ui_mcp/server.py` | FastMCP server with 16 tools | Complete |
+| `src/ui_mcp/cli_runner.py` | Subprocess wrapper | Complete |
+| `src/ui_mcp/README.md` | User documentation | Complete |
+| `src/ui_mcp/ARCHITECTURE.md` | Technical design | Complete |
+| `src/ui_cli/commands/mcp.py` | MCP CLI commands | Complete |
+| `scripts/mcp-server.sh` | Claude Desktop wrapper | Complete |
+| `scripts/test-mcp-tools.py` | Tool test suite | Complete |

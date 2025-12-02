@@ -12,6 +12,7 @@
   <a href="#quick-start">Quick Start</a> •
   <a href="#cloud-commands">Cloud API</a> •
   <a href="#local-commands">Local API</a> •
+  <a href="#claude-desktop-integration">Claude Desktop</a> •
   <a href="USERGUIDE.md">User Guide</a>
 </p>
 
@@ -43,6 +44,12 @@ UI-CLI is a command-line tool for managing UniFi networks. It supports two modes
 - **Traffic Analytics** - Deep packet inspection (DPI) statistics by application, per-client traffic breakdown, daily and hourly bandwidth reports
 - **Guest Management** - Create hotspot vouchers with custom duration, data limits, and speed caps, list and delete existing vouchers
 - **Configuration Export** - Export running config to YAML/JSON for backup, filter by section (networks, wireless, firewall, devices)
+
+**Claude Desktop Integration (MCP)**
+- Natural language control of your network via Claude Desktop
+- 16 tools: status, health, client management, device control, vouchers
+- Ask questions like "How many devices are connected?" or "Block the kids iPad"
+- [Full MCP documentation](src/ui_mcp/README.md)
 
 **General**
 - Multiple output formats: table (human-readable), JSON (scripting), CSV (spreadsheets)
@@ -247,6 +254,59 @@ Export your network configuration for backup or documentation.
 
 ---
 
+## Claude Desktop Integration
+
+Control your UniFi network using natural language through Claude Desktop.
+
+### Setup
+
+```bash
+# Install MCP server to Claude Desktop
+./ui mcp install
+
+# Verify installation
+./ui mcp check
+
+# Restart Claude Desktop to activate
+```
+
+### Example Prompts
+
+| Ask Claude... | Tool Used |
+|---------------|-----------|
+| "How many devices are on my network?" | `client_count` |
+| "What's my network health?" | `network_health` |
+| "What's my internet speed?" | `internet_speed` |
+| "Find my iPhone" | `find_client` |
+| "Is the TV online?" | `client_status` |
+| "Block the kids iPad" | `block_client` |
+| "Restart the garage AP" | `restart_device` |
+| "Create a guest WiFi voucher" | `create_voucher` |
+
+### Available Tools
+
+```
+Status & Health     client_count        Lookups             Actions
+├── network_status  ├── device_list     ├── find_client     ├── block_client
+├── network_health  └── network_list    ├── find_device     ├── unblock_client
+├── internet_speed                      └── client_status   ├── kick_client
+├── run_speedtest                                           ├── restart_device
+└── isp_performance                                         └── create_voucher
+```
+
+### MCP Commands
+
+```bash
+./ui mcp install    # Add to Claude Desktop config
+./ui mcp check      # Verify setup
+./ui mcp show       # View current config
+./ui mcp remove     # Remove from Claude Desktop
+```
+
+See [MCP Documentation](src/ui_mcp/README.md) for full details.
+
+---
+
 ## Output Formats
 
 All commands support multiple output formats:
@@ -345,7 +405,8 @@ docker run ui-cli    # Using Docker
 ├── devices             # Cloud: manage devices
 ├── isp                 # Cloud: ISP metrics
 ├── sdwan               # Cloud: SD-WAN configs
-└── local (lo)          # Local controller commands
+├── local (lo)          # Local controller commands
+└── mcp                 # Claude Desktop MCP server
 ```
 
 <details>
@@ -461,6 +522,8 @@ docker run ui-cli    # Using Docker
 | Document | Description |
 |----------|-------------|
 | [User Guide](USERGUIDE.md) | Complete documentation with examples |
+| [MCP Server](src/ui_mcp/README.md) | Claude Desktop integration guide |
+| [MCP Architecture](src/ui_mcp/ARCHITECTURE.md) | Technical design and data flow |
 | [Roadmap](ROADMAP.md) | Planned features and progress |
 | [Changelog](CHANGELOG.md) | Version history |
 

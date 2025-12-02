@@ -369,6 +369,10 @@ def restart_device(
         bool,
         typer.Option("--yes", "-y", help="Skip confirmation"),
     ] = False,
+    output: Annotated[
+        OutputFormat,
+        typer.Option("--output", "-o", help="Output format"),
+    ] = OutputFormat.TABLE,
 ) -> None:
     """Restart/reboot a device."""
 
@@ -407,10 +411,16 @@ def restart_device(
         raise typer.Exit(1)
 
     if success:
-        print_success(f"Restart command sent to '{name}'")
-        console.print("[dim]Device will reboot shortly[/dim]")
+        if output == OutputFormat.JSON:
+            output_json({"success": True, "action": "restart", "name": name, "mac": mac})
+        else:
+            print_success(f"Restart command sent to '{name}'")
+            console.print("[dim]Device will reboot shortly[/dim]")
     else:
-        print_error(f"Failed to restart '{name}'")
+        if output == OutputFormat.JSON:
+            output_json({"success": False, "action": "restart", "name": name, "mac": mac, "error": "API call failed"})
+        else:
+            print_error(f"Failed to restart '{name}'")
         raise typer.Exit(1)
 
 
