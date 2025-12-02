@@ -82,12 +82,10 @@ def print_config_summary(config: dict) -> None:
     """Print MCP server configuration summary."""
     console.print()
     console.print("[dim]Configuration:[/dim]")
-    console.print(f"  command:    [cyan]{config.get('command', 'N/A')}[/cyan]")
-    console.print(f"  args:       [cyan]{config.get('args', [])}[/cyan]")
-    console.print(f"  cwd:        [cyan]{config.get('cwd', 'N/A')}[/cyan]")
-    env = config.get('env', {})
-    if 'PYTHONPATH' in env:
-        console.print(f"  PYTHONPATH: [cyan]{env['PYTHONPATH']}[/cyan]")
+    console.print(f"  command: [cyan]{config.get('command', 'N/A')}[/cyan]")
+    args = config.get('args', [])
+    if args:
+        console.print(f"  args:    [cyan]{args}[/cyan]")
 
 
 # ==============================================================================
@@ -137,22 +135,27 @@ def create_backup(path: Path) -> Path | None:
 # ==============================================================================
 
 
+def get_wrapper_script() -> Path:
+    """Get path to MCP server wrapper script."""
+    return get_project_root() / "scripts" / "mcp-server.sh"
+
+
 def generate_mcp_config() -> dict:
     """Generate ui-cli MCP server configuration.
 
-    Note: cwd is set to project root (not src/) so that .env file is found.
-    PYTHONPATH is set to src/ so that ui_mcp module can be imported.
+    Uses a wrapper script that:
+    - Changes to project root
+    - Sources .env file to load credentials
+    - Sets PYTHONPATH
+    - Runs the MCP server with the specified Python
     """
-    project_root = get_project_root()
-    src_path = get_src_path()
+    wrapper_script = get_wrapper_script()
 
     return {
-        "command": sys.executable,
-        "args": ["-m", "ui_mcp"],
-        "cwd": str(project_root),
+        "command": str(wrapper_script),
+        "args": [],
         "env": {
-            "PYTHONUNBUFFERED": "1",
-            "PYTHONPATH": str(src_path),
+            "PYTHON_PATH": sys.executable,
         }
     }
 
@@ -205,6 +208,14 @@ def install(
         print_success(f"Config file found ({existing_count} existing MCP server(s))")
     else:
         print_info("Config file will be created")
+
+    # Check wrapper script exists
+    wrapper_script = get_wrapper_script()
+    if not wrapper_script.exists():
+        print_error(f"Wrapper script not found: {wrapper_script}")
+        console.print("  Run from the ui-cli project directory")
+        raise typer.Exit(1)
+    print_success(f"Wrapper script found: {wrapper_script}")
 
     # Check if ui-cli already configured
     if "ui-cli" in mcp_servers:
@@ -279,54 +290,45 @@ def check() -> None:
     print_success("'ui-cli' is configured")
 
     ui_cli_config = mcp_servers["ui-cli"]
+    has_errors = False
 
-    # Validate Python path
-    python_path = Path(ui_cli_config.get("command", ""))
-    if python_path.exists():
-        print_success(f"Python path valid: {python_path}")
+    # Validate wrapper script
+    command_path = Path(ui_cli_config.get("command", ""))
+    if command_path.exists():
+        print_success(f"Wrapper script found: {command_path}")
     else:
-        print_error(f"Python path not found: {python_path}")
+        print_error(f"Wrapper script not found: {command_path}")
+        has_errors = True
 
-    # Validate cwd path (project root with .env)
-    cwd_path = Path(ui_cli_config.get("cwd", ""))
-    if cwd_path.exists():
-        print_success(f"Project root valid: {cwd_path}")
-        # Check for .env file
-        env_file = cwd_path / ".env"
+    # Check project root and .env
+    project_root = get_project_root()
+    if project_root.exists():
+        print_success(f"Project root valid: {project_root}")
+        env_file = project_root / ".env"
         if env_file.exists():
-            print_success(f".env file found")
+            print_success(".env file found")
         else:
             print_warning(f".env file not found at {env_file}")
     else:
-        print_error(f"Project root not found: {cwd_path}")
-
-    # Validate PYTHONPATH (src directory)
-    env_vars = ui_cli_config.get("env", {})
-    pythonpath = env_vars.get("PYTHONPATH", "")
-    src_path = Path(pythonpath) if pythonpath else None
-
-    if src_path and src_path.exists():
-        print_success(f"PYTHONPATH valid: {src_path}")
-    elif pythonpath:
-        print_error(f"PYTHONPATH not found: {pythonpath}")
+        print_error(f"Project root not found: {project_root}")
+        has_errors = True
 
     # Check ui_mcp module
-    ui_mcp_path = src_path / "ui_mcp" if src_path and src_path.exists() else get_ui_mcp_path()
+    ui_mcp_path = get_ui_mcp_path()
     if ui_mcp_path.exists() and (ui_mcp_path / "__init__.py").exists():
         print_success("ui_mcp module found")
     else:
         print_error(f"ui_mcp module not found at: {ui_mcp_path}")
+        has_errors = True
 
     # Check mcp package installed
-    has_errors = False
-    if python_path.exists():
-        mcp_ok, mcp_msg = check_mcp_module(python_path)
-        if mcp_ok:
-            print_success(f"mcp package installed ({mcp_msg})")
-        else:
-            print_error(f"mcp package not installed")
-            console.print(f"        Run: [cyan]{python_path} -m pip install mcp[/cyan]")
-            has_errors = True
+    mcp_ok, mcp_msg = check_mcp_module(sys.executable)
+    if mcp_ok:
+        print_success(f"mcp package installed ({mcp_msg})")
+    else:
+        print_error("mcp package not installed")
+        console.print(f"        Run: [cyan]{sys.executable} -m pip install mcp[/cyan]")
+        has_errors = True
 
     # List other servers
     other_servers = [k for k in mcp_servers.keys() if k != "ui-cli"]
