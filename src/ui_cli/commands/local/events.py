@@ -112,13 +112,14 @@ def list_events(
     ] = OutputFormat.TABLE,
 ) -> None:
     """List recent events."""
+    from ui_cli.commands.local.utils import run_with_spinner
 
     async def _list():
         client = UniFiLocalClient()
         return await client.get_events(limit=limit)
 
     try:
-        events = asyncio.run(_list())
+        events = run_with_spinner(_list(), "Fetching events...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)
@@ -181,13 +182,14 @@ def list_alarms(
     ] = OutputFormat.TABLE,
 ) -> None:
     """List alarms."""
+    from ui_cli.commands.local.utils import run_with_spinner
 
     async def _list():
         client = UniFiLocalClient()
         return await client.get_alarms(archived=include_archived)
 
     try:
-        alarms = asyncio.run(_list())
+        alarms = run_with_spinner(_list(), "Fetching alarms...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)
@@ -268,12 +270,14 @@ def archive_alarm(
             console.print("[dim]Cancelled[/dim]")
             raise typer.Exit(0)
 
+    from ui_cli.commands.local.utils import run_with_spinner
+
     async def _archive():
         client = UniFiLocalClient()
         return await client.archive_alarm(alarm_id)
 
     try:
-        success = asyncio.run(_archive())
+        success = run_with_spinner(_archive(), "Archiving alarm...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)

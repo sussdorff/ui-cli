@@ -26,7 +26,7 @@ class Settings(BaseSettings):
         description="UniFi API base URL",
     )
     timeout: int = Field(
-        default=30,
+        default=15,
         description="Request timeout in seconds",
     )
 

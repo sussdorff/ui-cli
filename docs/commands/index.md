@@ -1,9 +1,10 @@
 # Command Reference
 
-UI-CLI provides two sets of commands:
+UI-CLI provides three interfaces:
 
 - **Cloud API** - Commands via `api.ui.com` for multi-site management
 - **Local Controller** - Direct connection to your controller for real-time operations
+- **Claude Desktop** - Natural language control via MCP integration
 
 ## Command Tree
 
@@ -17,7 +18,8 @@ UI-CLI provides two sets of commands:
 ├── devices             # Cloud: manage devices
 ├── isp                 # Cloud: ISP metrics
 ├── sdwan               # Cloud: SD-WAN configs
-└── local (lo)          # Local controller commands
+├── local (lo)          # Local controller commands
+└── mcp                  # Claude Desktop integration
 ```
 
 ## Quick Reference
@@ -49,6 +51,19 @@ UI-CLI provides two sets of commands:
 | `./ui lo dpi stats` | DPI statistics |
 | `./ui lo stats daily` | Daily traffic stats |
 | `./ui lo config show` | Export running config |
+
+### Claude Desktop (MCP)
+
+| Tool | Description |
+|------|-------------|
+| `network_health` | Network health summary |
+| `client_count` | Count connected clients |
+| `find_client` | Find client by name |
+| `block_client` | Block a client |
+| `restart_device` | Restart a device |
+| `create_voucher` | Create guest WiFi code |
+
+See [Claude Desktop](mcp.md) for full tool list and setup instructions.
 
 ## Output Formats
 

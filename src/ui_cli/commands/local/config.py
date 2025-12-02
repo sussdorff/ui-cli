@@ -607,39 +607,39 @@ def show_config(
         ./ui lo config show -o json            # Export as JSON
         ./ui lo config show --show-secrets     # Include passwords
     """
-    try:
+    async def _fetch_config():
         client = UniFiLocalClient()
+        # Fetch only what we need based on section
+        if section == ConfigSection.ALL:
+            return await client.get_running_config()
+        elif section == ConfigSection.NETWORKS:
+            return {"networks": await client.get_networks()}
+        elif section == ConfigSection.WIRELESS:
+            return {
+                "wireless": await client.get_wlans(),
+                "networks": await client.get_networks(),  # For network name mapping
+            }
+        elif section == ConfigSection.FIREWALL:
+            return {
+                "firewall_rules": await client.get_firewall_rules(),
+                "firewall_groups": await client.get_firewall_groups(),
+            }
+        elif section == ConfigSection.DEVICES:
+            return {"devices": await client.get_devices()}
+        elif section == ConfigSection.PORTFWD:
+            return {"port_forwards": await client.get_port_forwards()}
+        elif section == ConfigSection.DHCP:
+            return {
+                "dhcp_reservations": await client.get_dhcp_reservations(),
+                "networks": await client.get_networks(),
+            }
+        elif section == ConfigSection.ROUTING:
+            return {"routing": await client.get_routing()}
+        return {}
 
-        async def _fetch_config():
-            # Fetch only what we need based on section
-            if section == ConfigSection.ALL:
-                return await client.get_running_config()
-            elif section == ConfigSection.NETWORKS:
-                return {"networks": await client.get_networks()}
-            elif section == ConfigSection.WIRELESS:
-                return {
-                    "wireless": await client.get_wlans(),
-                    "networks": await client.get_networks(),  # For network name mapping
-                }
-            elif section == ConfigSection.FIREWALL:
-                return {
-                    "firewall_rules": await client.get_firewall_rules(),
-                    "firewall_groups": await client.get_firewall_groups(),
-                }
-            elif section == ConfigSection.DEVICES:
-                return {"devices": await client.get_devices()}
-            elif section == ConfigSection.PORTFWD:
-                return {"port_forwards": await client.get_port_forwards()}
-            elif section == ConfigSection.DHCP:
-                return {
-                    "dhcp_reservations": await client.get_dhcp_reservations(),
-                    "networks": await client.get_networks(),
-                }
-            elif section == ConfigSection.ROUTING:
-                return {"routing": await client.get_routing()}
-            return {}
-
-        config = asyncio.run(_fetch_config())
+    try:
+        from ui_cli.commands.local.utils import run_with_spinner
+        config = run_with_spinner(_fetch_config(), "Fetching configuration...")
     except Exception as e:
         handle_error(e)
         return
