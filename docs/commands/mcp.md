@@ -176,4 +176,4 @@ The installer adds this to Claude Desktop's config (`~/Library/Application Suppo
 
 ## Version
 
-Current MCP Server version: **0.2.0** (Tools Layer Architecture)
+Current MCP Server version: **0.3.0** (Tools Layer Architecture)

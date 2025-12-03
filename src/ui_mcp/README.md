@@ -220,5 +220,6 @@ result = run_cli(["lo", "health"], timeout=60)
 
 ## Version History
 
+- **v0.3.0** - Tools layer architecture with quick timeout support
 - **v0.2.0** - Tools layer architecture (subprocess-based)
 - **v0.1.0** - Direct API calls (deprecated)

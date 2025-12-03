@@ -4,11 +4,13 @@ All notable changes to UI-CLI are documented here.
 
 ---
 
-## [0.3.0] - December 2, 2024
+## [0.3.0] - December 3, 2024
 
 ### Highlights
 
 🤖 **Claude Desktop Integration** - Manage your UniFi network using natural language!
+
+⚡ **Quick Timeout & Spinners** - Better UX for local commands with progress indicators!
 
 ### Added
 
@@ -35,10 +37,20 @@ All notable changes to UI-CLI are documented here.
 - CLI remains single source of truth
 - JSON output for all action commands
 
+**Quick Timeout & Spinners**
+
+- `--quick` / `-q` option for 5-second timeout on connectivity checks
+- `--timeout` / `-t` option for custom timeout values
+- Spinners on all local commands for better UX
+- Default timeout reduced from 30s to 15s
+- `UNIFI_NO_SPINNER` env var for CI/CD environments
+- Auto-disable spinners when `CI=true` or `NO_COLOR` is set
+
 ### Documentation
 
 - Claude Desktop integration guide
 - MCP architecture documentation
+- Updated README with timeout options and CI/CD usage
 
 ---
 

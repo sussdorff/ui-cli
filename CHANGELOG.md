@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2024-12-03
+
+### Added
+
+#### Claude Desktop Integration (MCP Server)
+- **16 AI-optimized tools** for natural language network management
+- `./ui mcp install` - One-command Claude Desktop setup
+- `./ui mcp check` - Verify installation
+- `./ui mcp show` - View current configuration
+- `./ui mcp remove` - Remove from Claude Desktop
+
+**Available Tools:**
+| Category | Tools |
+|----------|-------|
+| Status & Health | `network_status`, `network_health`, `internet_speed`, `run_speedtest`, `isp_performance` |
+| Counts & Lists | `client_count`, `device_list`, `network_list` |
+| Lookups | `find_client`, `find_device`, `client_status` |
+| Actions | `block_client`, `unblock_client`, `kick_client`, `restart_device`, `create_voucher` |
+
+#### Quick Timeout & Spinners
+- `--quick` / `-q` option for 5-second timeout on connectivity checks
+- `--timeout` / `-t` option for custom timeout values
+- Spinners on all local commands for better UX
+- Default timeout reduced from 30s to 15s
+
+#### CI/CD Support
+- `UNIFI_NO_SPINNER` env var to disable spinners
+- Auto-disable spinners when `CI=true` or `NO_COLOR` is set
+
+### Architecture
+- Subprocess-based tools layer for MCP (CLI remains single source of truth)
+- JSON output for all action commands
+
+---
+
 ## [0.2.0] - 2024-12-01
 
 ### Added
