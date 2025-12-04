@@ -38,6 +38,7 @@ UI-CLI is a command-line tool for managing UniFi networks. It supports two modes
 
 **Local Controller API**
 - **Client Management** - List connected clients, filter by wired/wireless/network, view detailed status including signal strength and WiFi experience, block/unblock/reconnect clients
+- **Client Groups** - Create named groups of devices for bulk actions (e.g., "Kids Devices", "Smart Bulbs"), supports static groups with manual membership and auto groups with pattern-based rules (vendor, hostname, network, IP range)
 - **Device Control** - List all network devices, restart or upgrade firmware, toggle locate LED for physical identification, adopt new devices
 - **Network Visibility** - View all networks and VLANs with DHCP configuration, monitor site health (WAN/LAN/WLAN/VPN status), browse recent events and alerts
 - **Security & Firewall** - Inspect firewall rules by ruleset, view address and port groups, list port forwarding rules
@@ -47,8 +48,9 @@ UI-CLI is a command-line tool for managing UniFi networks. It supports two modes
 
 **Claude Desktop Integration (MCP)**
 - Natural language control of your network via Claude Desktop
-- 16 tools: status, health, client management, device control, vouchers
+- 21 tools: status, health, client management, device control, groups, vouchers
 - Ask questions like "How many devices are connected?" or "Block the kids iPad"
+- Group actions like "Block all kids devices" or "Show status of smart bulbs"
 - [Full MCP documentation](src/ui_mcp/README.md)
 
 **General**
@@ -243,6 +245,78 @@ Commands that connect directly to your UniFi Controller. Use `./ui local` or `./
 ./ui lo stats hourly            # Hourly traffic stats
 ```
 
+---
+
+## Client Groups
+
+Create named groups of client devices for bulk actions like blocking/unblocking. Useful for parental controls, IoT management, and network segmentation.
+
+### Static Groups
+
+Groups with manually managed membership.
+
+```bash
+# Create and manage groups
+./ui groups create "Kids Devices"          # Create group
+./ui groups list                           # List all groups
+./ui groups show "Kids Devices"            # Show group details
+
+# Manage members
+./ui groups add kids-devices AA:BB:CC:DD:EE:FF -a "Timmy iPad"
+./ui groups add kids-devices 11:22:33:44:55:66 -a "Sarah Phone"
+./ui groups members kids-devices           # List members
+./ui groups remove kids-devices "Timmy iPad"
+```
+
+### Auto Groups
+
+Groups that dynamically match clients based on rules.
+
+```bash
+# By vendor/manufacturer
+./ui groups auto "Apple Devices" --vendor "Apple"
+./ui groups auto "IoT Devices" --vendor "Philips,LIFX,Ring,Nest"
+
+# By hostname pattern
+./ui groups auto "Cameras" --name "*camera*,*cam*"
+
+# By network/SSID
+./ui groups auto "Guest Devices" --network "Guest"
+
+# By IP range
+./ui groups auto "Servers" --ip "192.168.1.100-200"
+
+# Combined rules (AND logic)
+./ui groups auto "Kids iPhones" --vendor "Apple" --name "*kid*"
+```
+
+### Bulk Actions
+
+Use groups with client commands for bulk operations.
+
+```bash
+# List all clients in a group
+./ui lo clients list -g kids-devices
+
+# Block all clients in a group (bedtime!)
+./ui lo clients block -g kids-devices -y
+
+# Unblock all clients in a group (morning!)
+./ui lo clients unblock -g kids-devices -y
+
+# Kick/disconnect all clients in a group
+./ui lo clients kick -g kids-devices -y
+```
+
+### Import/Export
+
+```bash
+./ui groups export -o groups-backup.json   # Backup groups
+./ui groups import groups-backup.json      # Restore groups
+```
+
+---
+
 ### Running Config
 
 Export your network configuration for backup or documentation.
@@ -425,6 +499,7 @@ docker run ui-cli    # Using Docker
 ├── devices             # Cloud: manage devices
 ├── isp                 # Cloud: ISP metrics
 ├── sdwan               # Cloud: SD-WAN configs
+├── groups              # Client groups for bulk actions
 ├── local (lo)          # Local controller commands
 └── mcp                 # Claude Desktop MCP server
 ```
@@ -468,13 +543,17 @@ docker run ui-cli    # Using Docker
 ├── list                # Connected clients
 │   ├── -w              # Wired only
 │   ├── -W              # Wireless only
-│   └── -n <network>    # Filter by network
+│   ├── -n <network>    # Filter by network
+│   └── -g <group>      # Filter by group
 ├── all                 # All clients (inc. offline)
 ├── get <name|MAC>      # Client details
 ├── status <name|MAC>   # Full client status
 ├── block <name|MAC>    # Block client
+│   └── -g <group>      # Block all in group
 ├── unblock <name|MAC>  # Unblock client
+│   └── -g <group>      # Unblock all in group
 ├── kick <name|MAC>     # Disconnect client
+│   └── -g <group>      # Kick all in group
 ├── count               # Count by category
 │   └── --by <field>    # type/network/vendor/ap
 └── duplicates          # Find duplicate names
@@ -535,6 +614,39 @@ docker run ui-cli    # Using Docker
 
 </details>
 
+<details>
+<summary><strong>Client Groups Commands</strong> (click to expand)</summary>
+
+```
+./ui groups
+├── list                # List all groups
+├── create <name>       # Create static group
+│   └── -d <desc>       # Description
+├── show <name>         # Show group details
+├── delete <name>       # Delete group
+├── edit <name>         # Edit group
+│   ├── -n <name>       # New name
+│   └── -d <desc>       # New description
+├── add <group> <MAC>   # Add member
+│   └── -a <alias>      # Set alias
+├── remove <group> <id> # Remove member
+├── alias <group> <id>  # Set/clear alias
+├── members <group>     # List members
+├── clear <group>       # Remove all members
+├── auto <name>         # Create auto group
+│   ├── --vendor        # Match by vendor
+│   ├── --name          # Match by name pattern
+│   ├── --hostname      # Match by hostname
+│   ├── --network       # Match by network/SSID
+│   ├── --ip            # Match by IP range
+│   ├── --mac           # Match by MAC prefix
+│   └── --type          # Match by wired/wireless
+├── export              # Export to JSON
+└── import <file>       # Import from JSON
+```
+
+</details>
+
 ---
 
 ## Documentation
@@ -542,6 +654,7 @@ docker run ui-cli    # Using Docker
 | Document | Description |
 |----------|-------------|
 | [User Guide](USERGUIDE.md) | Complete documentation with examples |
+| [Client Groups](https://vedanta.github.io/ui-cli/groups/) | Groups feature guide and reference |
 | [MCP Server](src/ui_mcp/README.md) | Claude Desktop integration guide |
 | [MCP Architecture](src/ui_mcp/ARCHITECTURE.md) | Technical design and data flow |
 | [Roadmap](ROADMAP.md) | Planned features and progress |

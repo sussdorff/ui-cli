@@ -190,6 +190,10 @@ def list_clients(
         bool,
         typer.Option("--verbose", "-v", help="Show additional details"),
     ] = False,
+    group: Annotated[
+        str | None,
+        typer.Option("--group", "-g", help="Filter by client group"),
+    ] = None,
 ) -> None:
     """List active (connected) clients."""
     async def _list():
@@ -202,7 +206,24 @@ def list_clients(
         handle_error(e)
         return
 
-    # Apply filters
+    # Apply group filter
+    if group:
+        from ui_cli.groups import GroupManager
+        gm = GroupManager()
+        result = gm.get_group(group)
+        if not result:
+            console.print(f"[red]Error:[/red] Group '{group}' not found")
+            raise typer.Exit(1)
+
+        _, grp = result
+        if grp.type == "static":
+            member_macs = {m.mac.upper() for m in grp.members or []}
+            clients = [c for c in clients if c.get("mac", "").upper() in member_macs]
+        else:
+            # Auto group - evaluate rules
+            clients = gm.evaluate_auto_group(group, clients)
+
+    # Apply other filters
     if wired:
         clients = [c for c in clients if c.get("is_wired", False)]
     elif wireless:
@@ -221,12 +242,14 @@ def list_clients(
 
     columns = CLIENT_COLUMNS_VERBOSE if verbose else CLIENT_COLUMNS
 
+    title = f"Clients in '{group}'" if group else "Connected Clients"
+
     if output == OutputFormat.JSON:
         output_json(formatted, verbose=verbose)
     elif output == OutputFormat.CSV:
         output_csv(formatted, columns)
     else:
-        output_table(formatted, columns, title="Connected Clients")
+        output_table(formatted, columns, title=title)
 
 
 @app.command("all")
@@ -551,6 +574,10 @@ def block_client(
         str | None,
         typer.Argument(help="Client MAC address or name"),
     ] = None,
+    group: Annotated[
+        str | None,
+        typer.Option("--group", "-g", help="Block all clients in a group"),
+    ] = None,
     yes: Annotated[
         bool,
         typer.Option("--yes", "-y", help="Skip confirmation prompt"),
@@ -560,19 +587,30 @@ def block_client(
         typer.Option("--output", "-o", help="Output format"),
     ] = OutputFormat.TABLE,
 ) -> None:
-    """Block a client from connecting.
+    """Block a client or all clients in a group.
 
     Examples:
         ./ui lo clients block my-iPhone
         ./ui lo clients block AA:BB:CC:DD:EE:FF -y
+        ./ui lo clients block -g kids-devices
     """
-    if not identifier:
+    if group and identifier:
+        console.print("[red]Error:[/red] Specify client OR --group, not both")
+        raise typer.Exit(1)
+
+    if not group and not identifier:
         console.print("[yellow]Usage:[/yellow] ./ui lo clients block <name or MAC>")
+        console.print("       ./ui lo clients block --group <group-name>")
         console.print()
         console.print("Examples:")
         console.print("  ./ui lo clients block my-iPhone")
-        console.print("  ./ui lo clients block AA:BB:CC:DD:EE:FF -y")
+        console.print("  ./ui lo clients block -g kids-devices")
         raise typer.Exit(1)
+
+    # Handle group blocking
+    if group:
+        _block_group(group, yes, output)
+        return
 
     # Resolve identifier to MAC
     async def _resolve():
@@ -621,11 +659,107 @@ def block_client(
         raise typer.Exit(1)
 
 
+def _block_group(group: str, yes: bool, output: OutputFormat) -> None:
+    """Block all clients in a group."""
+    from ui_cli.groups import GroupManager
+
+    gm = GroupManager()
+    result = gm.get_group(group)
+    if not result:
+        console.print(f"[red]Error:[/red] Group '{group}' not found")
+        raise typer.Exit(1)
+
+    _, grp = result
+
+    async def _get_members():
+        api_client = UniFiLocalClient()
+        if grp.type == "static":
+            members = []
+            for m in grp.members or []:
+                members.append({"mac": m.mac, "name": m.alias})
+            return members, api_client
+        else:
+            # Auto group - evaluate rules
+            clients = await api_client.list_all_clients()
+            matching = gm.evaluate_auto_group(group, clients)
+            members = [{"mac": c["mac"], "name": c.get("name") or c.get("hostname")} for c in matching]
+            return members, api_client
+
+    try:
+        members, api_client = run_with_spinner(_get_members(), "Getting group members...")
+    except Exception as e:
+        handle_error(e)
+        return
+
+    if not members:
+        console.print(f"[yellow]No members in group '{grp.name}'[/yellow]")
+        return
+
+    # Confirm action
+    if not yes:
+        if not typer.confirm(f"Block {len(members)} clients in group '{grp.name}'?"):
+            console.print("[dim]Cancelled[/dim]")
+            raise typer.Exit(0)
+
+    console.print(f"\nBlocking {len(members)} clients in group \"{grp.name}\"...\n")
+
+    # Block each client
+    results = {"blocked": 0, "already": 0, "failed": 0}
+    result_details = []
+
+    async def _block_one(mac: str):
+        return await api_client.block_client(mac)
+
+    for member in members:
+        mac = member["mac"]
+        name = member["name"] or mac
+        display = f"{name} ({mac.upper()})" if name != mac else mac.upper()
+
+        try:
+            # Check current status first
+            async def _check():
+                all_clients = await api_client.list_all_clients()
+                for c in all_clients:
+                    if c.get("mac", "").upper() == mac.upper():
+                        return c.get("blocked", False)
+                return False
+
+            is_blocked = asyncio.run(_check())
+
+            if is_blocked:
+                console.print(f"[dim]- {display} - already blocked[/dim]")
+                results["already"] += 1
+                result_details.append({"mac": mac, "name": name, "status": "already_blocked"})
+            else:
+                success = asyncio.run(_block_one(mac))
+                if success:
+                    console.print(f"[green]✓[/green] {display} - blocked")
+                    results["blocked"] += 1
+                    result_details.append({"mac": mac, "name": name, "status": "blocked"})
+                else:
+                    console.print(f"[red]✗[/red] {display} - failed")
+                    results["failed"] += 1
+                    result_details.append({"mac": mac, "name": name, "status": "failed"})
+        except Exception:
+            console.print(f"[red]✗[/red] {display} - failed")
+            results["failed"] += 1
+            result_details.append({"mac": mac, "name": name, "status": "failed"})
+
+    console.print(f"\nBlocked: {results['blocked']} | Already blocked: {results['already']} | Failed: {results['failed']}")
+
+    if output == OutputFormat.JSON:
+        output_json({"group": grp.name, "results": result_details, "summary": results})
+
+
 @app.command("unblock")
 def unblock_client(
     identifier: Annotated[
         str | None,
         typer.Argument(help="Client MAC address or name"),
+    ] = None,
+    group: Annotated[
+        str | None,
+        typer.Option("--group", "-g", help="Unblock all clients in a group"),
     ] = None,
     yes: Annotated[
         bool,
@@ -636,19 +770,30 @@ def unblock_client(
         typer.Option("--output", "-o", help="Output format"),
     ] = OutputFormat.TABLE,
 ) -> None:
-    """Unblock a previously blocked client.
+    """Unblock a client or all clients in a group.
 
     Examples:
         ./ui lo clients unblock my-iPhone
         ./ui lo clients unblock AA:BB:CC:DD:EE:FF -y
+        ./ui lo clients unblock -g kids-devices
     """
-    if not identifier:
+    if group and identifier:
+        console.print("[red]Error:[/red] Specify client OR --group, not both")
+        raise typer.Exit(1)
+
+    if not group and not identifier:
         console.print("[yellow]Usage:[/yellow] ./ui lo clients unblock <name or MAC>")
+        console.print("       ./ui lo clients unblock --group <group-name>")
         console.print()
         console.print("Examples:")
         console.print("  ./ui lo clients unblock my-iPhone")
-        console.print("  ./ui lo clients unblock AA:BB:CC:DD:EE:FF -y")
+        console.print("  ./ui lo clients unblock -g kids-devices")
         raise typer.Exit(1)
+
+    # Handle group unblocking
+    if group:
+        _unblock_group(group, yes, output)
+        return
 
     # Resolve identifier to MAC
     async def _resolve():
@@ -697,11 +842,103 @@ def unblock_client(
         raise typer.Exit(1)
 
 
+def _unblock_group(group: str, yes: bool, output: OutputFormat) -> None:
+    """Unblock all clients in a group."""
+    from ui_cli.groups import GroupManager
+
+    gm = GroupManager()
+    result = gm.get_group(group)
+    if not result:
+        console.print(f"[red]Error:[/red] Group '{group}' not found")
+        raise typer.Exit(1)
+
+    _, grp = result
+
+    async def _get_members():
+        api_client = UniFiLocalClient()
+        if grp.type == "static":
+            members = []
+            for m in grp.members or []:
+                members.append({"mac": m.mac, "name": m.alias})
+            return members, api_client
+        else:
+            clients = await api_client.list_all_clients()
+            matching = gm.evaluate_auto_group(group, clients)
+            members = [{"mac": c["mac"], "name": c.get("name") or c.get("hostname")} for c in matching]
+            return members, api_client
+
+    try:
+        members, api_client = run_with_spinner(_get_members(), "Getting group members...")
+    except Exception as e:
+        handle_error(e)
+        return
+
+    if not members:
+        console.print(f"[yellow]No members in group '{grp.name}'[/yellow]")
+        return
+
+    if not yes:
+        if not typer.confirm(f"Unblock {len(members)} clients in group '{grp.name}'?"):
+            console.print("[dim]Cancelled[/dim]")
+            raise typer.Exit(0)
+
+    console.print(f"\nUnblocking {len(members)} clients in group \"{grp.name}\"...\n")
+
+    results = {"unblocked": 0, "not_blocked": 0, "failed": 0}
+    result_details = []
+
+    for member in members:
+        mac = member["mac"]
+        name = member["name"] or mac
+        display = f"{name} ({mac.upper()})" if name != mac else mac.upper()
+
+        try:
+            async def _check():
+                all_clients = await api_client.list_all_clients()
+                for c in all_clients:
+                    if c.get("mac", "").upper() == mac.upper():
+                        return c.get("blocked", False)
+                return False
+
+            is_blocked = asyncio.run(_check())
+
+            if not is_blocked:
+                console.print(f"[dim]- {display} - not blocked[/dim]")
+                results["not_blocked"] += 1
+                result_details.append({"mac": mac, "name": name, "status": "not_blocked"})
+            else:
+                async def _unblock_one():
+                    return await api_client.unblock_client(mac)
+
+                success = asyncio.run(_unblock_one())
+                if success:
+                    console.print(f"[green]✓[/green] {display} - unblocked")
+                    results["unblocked"] += 1
+                    result_details.append({"mac": mac, "name": name, "status": "unblocked"})
+                else:
+                    console.print(f"[red]✗[/red] {display} - failed")
+                    results["failed"] += 1
+                    result_details.append({"mac": mac, "name": name, "status": "failed"})
+        except Exception:
+            console.print(f"[red]✗[/red] {display} - failed")
+            results["failed"] += 1
+            result_details.append({"mac": mac, "name": name, "status": "failed"})
+
+    console.print(f"\nUnblocked: {results['unblocked']} | Not blocked: {results['not_blocked']} | Failed: {results['failed']}")
+
+    if output == OutputFormat.JSON:
+        output_json({"group": grp.name, "results": result_details, "summary": results})
+
+
 @app.command("kick")
 def kick_client(
     identifier: Annotated[
         str | None,
         typer.Argument(help="Client MAC address or name"),
+    ] = None,
+    group: Annotated[
+        str | None,
+        typer.Option("--group", "-g", help="Kick all clients in a group"),
     ] = None,
     yes: Annotated[
         bool,
@@ -712,19 +949,30 @@ def kick_client(
         typer.Option("--output", "-o", help="Output format"),
     ] = OutputFormat.TABLE,
 ) -> None:
-    """Kick (disconnect) a client, forcing reconnection.
+    """Kick (disconnect) a client or all clients in a group.
 
     Examples:
         ./ui lo clients kick my-iPhone
         ./ui lo clients kick AA:BB:CC:DD:EE:FF -y
+        ./ui lo clients kick -g kids-devices
     """
-    if not identifier:
+    if group and identifier:
+        console.print("[red]Error:[/red] Specify client OR --group, not both")
+        raise typer.Exit(1)
+
+    if not group and not identifier:
         console.print("[yellow]Usage:[/yellow] ./ui lo clients kick <name or MAC>")
+        console.print("       ./ui lo clients kick --group <group-name>")
         console.print()
         console.print("Examples:")
         console.print("  ./ui lo clients kick my-iPhone")
-        console.print("  ./ui lo clients kick AA:BB:CC:DD:EE:FF -y")
+        console.print("  ./ui lo clients kick -g kids-devices")
         raise typer.Exit(1)
+
+    # Handle group kicking
+    if group:
+        _kick_group(group, yes, output)
+        return
 
     # Resolve identifier to MAC
     async def _resolve():
@@ -771,6 +1019,80 @@ def kick_client(
         else:
             console.print(f"[red]Failed to kick client:[/red] {display}")
         raise typer.Exit(1)
+
+
+def _kick_group(group: str, yes: bool, output: OutputFormat) -> None:
+    """Kick all clients in a group."""
+    from ui_cli.groups import GroupManager
+
+    gm = GroupManager()
+    result = gm.get_group(group)
+    if not result:
+        console.print(f"[red]Error:[/red] Group '{group}' not found")
+        raise typer.Exit(1)
+
+    _, grp = result
+
+    async def _get_members():
+        api_client = UniFiLocalClient()
+        if grp.type == "static":
+            members = []
+            for m in grp.members or []:
+                members.append({"mac": m.mac, "name": m.alias})
+            return members, api_client
+        else:
+            clients = await api_client.list_clients()  # Only online clients
+            matching = gm.evaluate_auto_group(group, clients)
+            members = [{"mac": c["mac"], "name": c.get("name") or c.get("hostname")} for c in matching]
+            return members, api_client
+
+    try:
+        members, api_client = run_with_spinner(_get_members(), "Getting group members...")
+    except Exception as e:
+        handle_error(e)
+        return
+
+    if not members:
+        console.print(f"[yellow]No members in group '{grp.name}'[/yellow]")
+        return
+
+    if not yes:
+        if not typer.confirm(f"Kick {len(members)} clients in group '{grp.name}'?"):
+            console.print("[dim]Cancelled[/dim]")
+            raise typer.Exit(0)
+
+    console.print(f"\nKicking {len(members)} clients in group \"{grp.name}\"...\n")
+
+    results = {"kicked": 0, "failed": 0}
+    result_details = []
+
+    for member in members:
+        mac = member["mac"]
+        name = member["name"] or mac
+        display = f"{name} ({mac.upper()})" if name != mac else mac.upper()
+
+        try:
+            async def _kick_one():
+                return await api_client.kick_client(mac)
+
+            success = asyncio.run(_kick_one())
+            if success:
+                console.print(f"[green]✓[/green] {display} - kicked")
+                results["kicked"] += 1
+                result_details.append({"mac": mac, "name": name, "status": "kicked"})
+            else:
+                console.print(f"[red]✗[/red] {display} - failed")
+                results["failed"] += 1
+                result_details.append({"mac": mac, "name": name, "status": "failed"})
+        except Exception:
+            console.print(f"[red]✗[/red] {display} - failed")
+            results["failed"] += 1
+            result_details.append({"mac": mac, "name": name, "status": "failed"})
+
+    console.print(f"\nKicked: {results['kicked']} | Failed: {results['failed']}")
+
+    if output == OutputFormat.JSON:
+        output_json({"group": grp.name, "results": result_details, "summary": results})
 
 
 class CountBy(str, typer.Typer):

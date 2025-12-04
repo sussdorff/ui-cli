@@ -32,6 +32,7 @@ Manage network clients.
 ./ui lo clients list -w        # Wired only
 ./ui lo clients list -W        # Wireless only
 ./ui lo clients list -n Guest  # Filter by network
+./ui lo clients list -g kids   # Filter by group
 ./ui lo clients list -v        # Verbose
 ./ui lo clients all            # Include offline clients
 ```
@@ -58,12 +59,17 @@ Comprehensive client information including signal, experience, and data usage.
 ./ui lo clients block my-iPhone        # Block (with confirmation)
 ./ui lo clients block my-iPhone -y     # Skip confirmation
 ./ui lo clients unblock my-iPhone      # Unblock
+
+# Bulk actions with groups
+./ui lo clients block -g kids-devices -y     # Block all in group
+./ui lo clients unblock -g kids-devices -y   # Unblock all in group
 ```
 
 ### Disconnect Client
 
 ```bash
 ./ui lo clients kick my-iPhone         # Force reconnect
+./ui lo clients kick -g kids-devices -y  # Kick all in group
 ```
 
 ### Count Clients

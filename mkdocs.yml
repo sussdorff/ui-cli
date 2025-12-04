@@ -4,25 +4,27 @@ site_url: https://vedanta.github.io/ui-cli
 repo_url: https://github.com/vedanta/ui-cli
 repo_name: vedanta/ui-cli
 
+docs_dir: pages
+
 theme:
   name: material
-  custom_dir: docs/overrides
+  custom_dir: pages/overrides
   logo: assets/gorilla.png
   favicon: assets/gorilla.png
   palette:
-    # Dark mode (default - terminal feel)
+    # Dracula dark mode (default)
     - scheme: slate
       primary: deep purple
-      accent: amber
+      accent: pink
       toggle:
-        icon: material/brightness-4
+        icon: material/weather-night
         name: Switch to light mode
-    # Light mode
+    # Dracula light mode
     - scheme: default
       primary: deep purple
-      accent: amber
+      accent: pink
       toggle:
-        icon: material/brightness-7
+        icon: material/weather-sunny
         name: Switch to dark mode
   features:
     - navigation.instant
@@ -42,6 +44,9 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com/vedanta/ui-cli
   generator: false
+
+extra_css:
+  - stylesheets/dracula.css
 
 copyright: "Gorilla Powered! 🦍 | MIT License"
 
@@ -74,6 +79,7 @@ nav:
     - Overview: commands/index.md
     - Cloud API: commands/cloud.md
     - Local Controller: commands/local.md
+    - Client Groups: groups.md
     - Claude Desktop: commands/mcp.md
   - Examples: examples.md
   - Troubleshooting: troubleshooting.md

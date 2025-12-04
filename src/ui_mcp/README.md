@@ -47,7 +47,7 @@ flowchart TB
 ## How It Works
 
 1. **Claude Desktop** connects to the MCP server via stdio
-2. **FastMCP Server** (`server.py`) registers 16 tools with friendly names
+2. **FastMCP Server** (`server.py`) registers 21 tools with friendly names
 3. **CLI Runner** (`cli_runner.py`) executes `./ui` commands via subprocess
 4. **UI CLI** performs the actual API calls and returns JSON
 5. **Results** flow back through the chain to Claude
@@ -137,6 +137,16 @@ The installer adds this to Claude Desktop's config:
 | `kick_client` | Force disconnect | "Disconnect my laptop" |
 | `restart_device` | Reboot device | "Restart the garage AP" |
 | `create_voucher` | Create guest WiFi code | "Create a guest WiFi voucher" |
+
+### Groups
+
+| Tool | Description | Example Prompt |
+|------|-------------|----------------|
+| `list_groups` | List all client groups | "What groups do I have?" |
+| `get_group` | Get group details | "Show the kids devices group" |
+| `block_group` | Block all clients in group | "Block all kids devices" |
+| `unblock_group` | Unblock all clients in group | "Unblock the kids devices" |
+| `group_status` | Live status of group members | "Are the kids devices online?" |
 
 ## File Structure
 

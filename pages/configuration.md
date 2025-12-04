@@ -89,11 +89,19 @@ UNIFI_CONTROLLER_SITE=default
 UNIFI_CONTROLLER_VERIFY_SSL=false
 ```
 
-## Session Management
+## Data Storage
+
+UI-CLI stores local data in `~/.config/ui-cli/`:
+
+| File | Purpose |
+|------|---------|
+| `session.json` | Cached controller login session |
+| `groups.json` | Client groups definitions |
+
+### Session Management
 
 Local controller sessions are cached to avoid repeated logins:
 
-- Session file: `~/.config/ui-cli/session.json`
 - Auto-refreshes on expiry
 - Delete to force re-login
 
@@ -101,6 +109,21 @@ Local controller sessions are cached to avoid repeated logins:
 # Force new session
 rm ~/.config/ui-cli/session.json
 ./ui lo health
+```
+
+### Groups Storage
+
+Client groups are stored locally and don't require a network connection to manage:
+
+```bash
+# View groups file location
+ls ~/.config/ui-cli/groups.json
+
+# Backup groups
+cp ~/.config/ui-cli/groups.json ~/groups-backup.json
+
+# Or use the export command
+./ui groups export -o ~/groups-backup.json
 ```
 
 ## Multiple Sites

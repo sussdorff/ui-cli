@@ -265,6 +265,81 @@ def mock_daily_stats_response() -> list[dict[str, Any]]:
 
 
 # ============================================================
+# Groups Fixtures
+# ============================================================
+
+@pytest.fixture
+def mock_groups_data() -> dict[str, Any]:
+    """Sample groups data for testing."""
+    return {
+        "version": 1,
+        "groups": {
+            "kids-devices": {
+                "name": "Kids Devices",
+                "description": "Tablets and phones for the kids",
+                "type": "static",
+                "members": [
+                    {"mac": "AA:BB:CC:DD:EE:FF", "alias": "Timmy iPad"},
+                    {"mac": "11:22:33:44:55:66", "alias": "Sarah Phone"},
+                ],
+                "created_at": "2024-01-15T10:30:00",
+                "updated_at": "2024-01-15T10:35:00",
+            },
+            "apple-devices": {
+                "name": "Apple Devices",
+                "type": "auto",
+                "rules": {"vendor": ["Apple"]},
+                "created_at": "2024-01-15T11:00:00",
+                "updated_at": "2024-01-15T11:00:00",
+            },
+        }
+    }
+
+
+@pytest.fixture
+def mock_clients_for_groups() -> list[dict[str, Any]]:
+    """Sample clients for testing group matching."""
+    return [
+        {
+            "mac": "AA:BB:CC:DD:EE:FF",
+            "ip": "192.168.1.100",
+            "name": "Timmy iPad",
+            "hostname": "timmys-ipad",
+            "oui": "Apple",
+            "network": "Default",
+            "is_wired": False,
+        },
+        {
+            "mac": "11:22:33:44:55:66",
+            "ip": "192.168.1.101",
+            "name": "Sarah Phone",
+            "hostname": "sarahs-phone",
+            "oui": "Apple",
+            "network": "Default",
+            "is_wired": False,
+        },
+        {
+            "mac": "22:33:44:55:66:77",
+            "ip": "192.168.1.102",
+            "name": "Gaming PC",
+            "hostname": "gaming-pc",
+            "oui": "Dell",
+            "network": "Default",
+            "is_wired": True,
+        },
+        {
+            "mac": "33:44:55:66:77:88",
+            "ip": "192.168.100.50",
+            "name": "Guest Phone",
+            "hostname": "guest-phone",
+            "oui": "Samsung",
+            "network": "Guest",
+            "is_wired": False,
+        },
+    ]
+
+
+# ============================================================
 # Environment Fixtures
 # ============================================================
 

@@ -20,7 +20,7 @@ UI-CLI includes an MCP (Model Context Protocol) server that enables Claude Deskt
          │ MCP Protocol (stdio)
          ▼
 ┌─────────────────┐
-│   MCP Server    │  ← 16 AI-optimized tools
+│   MCP Server    │  ← 21 AI-optimized tools
 │   (ui_mcp)      │
 └────────┬────────┘
          │ subprocess
@@ -91,6 +91,16 @@ After installation, restart Claude Desktop to load the new tools.
 | `kick_client` | Force disconnect | "Disconnect my laptop" |
 | `restart_device` | Reboot device | "Restart the garage AP" |
 | `create_voucher` | Create guest WiFi code | "Create a guest WiFi voucher" |
+
+### Groups
+
+| Tool | Description | Example Prompt |
+|------|-------------|----------------|
+| `list_groups` | List all client groups | "What groups do I have?" |
+| `get_group` | Get group details | "Show the kids devices group" |
+| `block_group` | Block all clients in group | "Block all kids devices" |
+| `unblock_group` | Unblock all clients in group | "Unblock the kids devices" |
+| `group_status` | Live status of group members | "Are the kids devices online?" |
 
 ## Example Conversations
 

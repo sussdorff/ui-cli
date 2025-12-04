@@ -346,6 +346,115 @@ async def create_voucher(
 
 
 # =============================================================================
+# Client Groups Tools
+# =============================================================================
+
+
+@server.tool()
+async def list_groups() -> str:
+    """List all client groups.
+
+    Returns all defined groups with member counts.
+    Groups can be used for bulk actions like blocking/unblocking.
+    """
+    result = run_cli(["groups", "list"])
+    if "error" in result:
+        return format_result(result)
+
+    if isinstance(result, list):
+        count = len(result)
+        summary = f"Found {count} group(s)"
+    else:
+        summary = "Groups retrieved."
+
+    return format_result(result, summary)
+
+
+@server.tool()
+async def get_group(name: str) -> str:
+    """Get details of a client group.
+
+    Args:
+        name: Group name or slug
+
+    Returns group info including members and rules (for auto groups).
+    """
+    result = run_cli(["groups", "show", name])
+    if "error" in result:
+        return format_result(result)
+    return format_result(result, f"Group details: {name}")
+
+
+@server.tool()
+async def block_group(name: str) -> str:
+    """Block all clients in a group.
+
+    Args:
+        name: Group name or slug
+
+    All clients in the group will be blocked from the network.
+    Useful for parental controls (e.g., bedtime restrictions).
+    """
+    result = run_cli(["lo", "clients", "block", "-g", name, "-y"])
+    if "error" in result:
+        return format_result(result)
+
+    summary = result.get("summary", {})
+    blocked = summary.get("blocked", 0)
+    already = summary.get("already", 0)
+    failed = summary.get("failed", 0)
+    return format_result(
+        result,
+        f"Blocked {blocked} clients (already blocked: {already}, failed: {failed})"
+    )
+
+
+@server.tool()
+async def unblock_group(name: str) -> str:
+    """Unblock all clients in a group.
+
+    Args:
+        name: Group name or slug
+
+    All previously blocked clients in the group will be unblocked.
+    """
+    result = run_cli(["lo", "clients", "unblock", "-g", name, "-y"])
+    if "error" in result:
+        return format_result(result)
+
+    summary = result.get("summary", {})
+    unblocked = summary.get("unblocked", 0)
+    not_blocked = summary.get("not_blocked", 0)
+    failed = summary.get("failed", 0)
+    return format_result(
+        result,
+        f"Unblocked {unblocked} clients (not blocked: {not_blocked}, failed: {failed})"
+    )
+
+
+@server.tool()
+async def group_status(name: str) -> str:
+    """Get live status of all clients in a group.
+
+    Args:
+        name: Group name or slug
+
+    Returns online/offline status for each group member.
+    """
+    result = run_cli(["lo", "clients", "list", "-g", name])
+    if "error" in result:
+        return format_result(result)
+
+    if isinstance(result, list):
+        count = len(result)
+        summary = f"Found {count} client(s) in group '{name}'"
+    else:
+        summary = f"Status for group: {name}"
+
+    return format_result(result, summary)
+
+
+# =============================================================================
 # Entry Point
 # =============================================================================
 
