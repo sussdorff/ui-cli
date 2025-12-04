@@ -9,434 +9,41 @@
 </p>
 
 <p align="center">
+  <a href="https://vedanta.github.io/ui-cli">Documentation</a> •
+  <a href="#installation">Installation</a> •
   <a href="#quick-start">Quick Start</a> •
-  <a href="#cloud-commands">Cloud API</a> •
-  <a href="#local-commands">Local API</a> •
-  <a href="#claude-desktop-integration">Claude Desktop</a> •
-  <a href="USERGUIDE.md">User Guide</a>
+  <a href="CHANGELOG.md">Changelog</a>
 </p>
 
 ---
 
-## What is UI-CLI?
+## Overview
 
-UI-CLI is a command-line tool for managing UniFi networks. It supports two modes:
+UI-CLI provides complete command-line access to your UniFi network infrastructure with two connection modes:
 
-| Mode | Connection | Use Case |
+| Mode | Connection | Best For |
 |------|------------|----------|
-| **Cloud API** | Via `api.ui.com` | Manage multiple sites, view ISP metrics, SD-WAN |
-| **Local API** | Direct to controller | Client management, device control, real-time data |
-
-### Features
-
-**Cloud API (Site Manager)**
-- View and manage multiple sites and controllers from anywhere
-- List all devices across your infrastructure with filtering
-- Monitor ISP performance metrics (latency, speeds, uptime, packet loss)
-- Manage SD-WAN configurations and deployment status
-- Count and group devices by model, status, or controller
-
-**Local Controller API**
-- **Client Management** - List connected clients, filter by wired/wireless/network, view detailed status including signal strength and WiFi experience, block/unblock/reconnect clients
-- **Client Groups** - Create named groups of devices for bulk actions (e.g., "Kids Devices", "Smart Bulbs"), supports static groups with manual membership and auto groups with pattern-based rules (vendor, hostname, network, IP range)
-- **Device Control** - List all network devices, restart or upgrade firmware, toggle locate LED for physical identification, adopt new devices
-- **Network Visibility** - View all networks and VLANs with DHCP configuration, monitor site health (WAN/LAN/WLAN/VPN status), browse recent events and alerts
-- **Security & Firewall** - Inspect firewall rules by ruleset, view address and port groups, list port forwarding rules
-- **Traffic Analytics** - Deep packet inspection (DPI) statistics by application, per-client traffic breakdown, daily and hourly bandwidth reports
-- **Guest Management** - Create hotspot vouchers with custom duration, data limits, and speed caps, list and delete existing vouchers
-- **Configuration Export** - Export running config to YAML/JSON for backup, filter by section (networks, wireless, firewall, devices)
-
-**Claude Desktop Integration (MCP)**
-- Natural language control of your network via Claude Desktop
-- 21 tools: status, health, client management, device control, groups, vouchers
-- Ask questions like "How many devices are connected?" or "Block the kids iPad"
-- Group actions like "Block all kids devices" or "Show status of smart bulbs"
-- [Full MCP documentation](src/ui_mcp/README.md)
-
-**General**
-- Multiple output formats: table (human-readable), JSON (scripting), CSV (spreadsheets)
-- Works with UDM, UDM Pro, UDM SE, Cloud Key, and self-hosted controllers
-- Automatic controller type detection (UDM vs Cloud Key API paths)
-- Session management with automatic re-authentication
-- SSL verification bypass for self-signed certificates
-
----
-
-## Quick Start
-
-```bash
-# Clone and install
-git clone https://github.com/vedanta/ui-cli.git
-cd ui-cli
-conda env create -f environment.yml
-conda activate ui-cli
-pip install -e .
-
-# Configure
-cp .env.example .env
-# Edit .env with your credentials
-
-# Verify
-./ui status                    # Cloud API status
-./ui lo clients list           # Local controller clients
-```
-
----
-
-## Configuration
-
-Create a `.env` file:
-
-```bash
-# Cloud API (api.ui.com)
-UNIFI_API_KEY=your-api-key-here
-
-# Local Controller (direct connection)
-UNIFI_CONTROLLER_URL=https://192.168.1.1
-UNIFI_CONTROLLER_USERNAME=admin
-UNIFI_CONTROLLER_PASSWORD=yourpassword
-UNIFI_CONTROLLER_SITE=default
-UNIFI_CONTROLLER_VERIFY_SSL=false
-```
-
-**Get your Cloud API key:** [unifi.ui.com](https://unifi.ui.com) → Settings → API → Create API Key
-
----
-
-## Cloud Commands
-
-Commands that use the UniFi Site Manager API (`api.ui.com`).
-
-### Status & Info
-
-```bash
-./ui status                     # Check API connection
-./ui version                    # Show CLI version
-```
-
-### Hosts & Sites
-
-```bash
-./ui hosts list                 # List all controllers
-./ui hosts get <ID>             # Get controller details
-./ui sites list                 # List all sites
-```
-
-### Devices
-
-```bash
-./ui devices list               # List all devices
-./ui devices list --host <ID>   # Filter by controller
-./ui devices count              # Count devices
-./ui devices count --by model   # Group by model
-./ui devices count --by status  # Find offline devices
-```
-
-### ISP Metrics
-
-```bash
-./ui isp metrics                # Last 7 days (hourly)
-./ui isp metrics -i 5m          # Last 24h (5-min intervals)
-./ui isp metrics --hours 48     # Custom time range
-```
-
-### SD-WAN
-
-```bash
-./ui sdwan list                 # List configurations
-./ui sdwan get <ID>             # Get config details
-./ui sdwan status <ID>          # Deployment status
-```
-
----
-
-## Local Commands
-
-Commands that connect directly to your UniFi Controller. Use `./ui local` or `./ui lo`.
-
-### Timeout Options
-
-```bash
-./ui lo health                  # Default 15s timeout
-./ui lo -q health               # Quick mode (5s timeout)
-./ui lo --timeout 60 health     # Custom timeout
-```
-
-### Health & Monitoring
-
-```bash
-./ui lo health                  # Site health summary
-./ui lo events list             # Recent events
-./ui lo events list -l 50       # Last 50 events
-```
-
-### Clients
-
-```bash
-# List clients
-./ui lo clients list            # Connected clients
-./ui lo clients list -w         # Wired only
-./ui lo clients list -W         # Wireless only
-./ui lo clients list -n Guest   # Filter by network
-./ui lo clients all             # All clients (inc. offline)
-
-# Client details
-./ui lo clients get my-iPhone   # By name
-./ui lo clients get AA:BB:CC:DD:EE:FF  # By MAC
-./ui lo clients status my-iPhone       # Full status
-
-# Client actions
-./ui lo clients block my-iPhone     # Block client
-./ui lo clients unblock my-iPhone   # Unblock client
-./ui lo clients kick my-iPhone      # Disconnect client
-
-# Statistics
-./ui lo clients count               # By connection type
-./ui lo clients count --by network  # By network/SSID
-./ui lo clients count --by vendor   # By manufacturer
-```
-
-### Devices (Local)
-
-```bash
-# List and get
-./ui lo devices list            # All network devices
-./ui lo devices list -v         # Verbose (channels, load)
-./ui lo devices get UDM-Pro     # Device details
-
-# Actions
-./ui lo devices restart UDM-Pro       # Restart device
-./ui lo devices upgrade Office-AP     # Upgrade firmware
-./ui lo devices locate Office-AP      # Toggle locate LED
-./ui lo devices adopt 70:a7:41:xx:xx  # Adopt device
-```
-
-### Networks
-
-```bash
-./ui lo networks list           # All networks/VLANs
-./ui lo networks list -v        # With DHCP details
-```
-
-### Firewall & Security
-
-```bash
-./ui lo firewall list           # Firewall rules
-./ui lo firewall list --ruleset WAN_IN
-./ui lo firewall groups         # Address/port groups
-./ui lo portfwd list            # Port forwarding rules
-```
-
-### Guest Vouchers
-
-```bash
-./ui lo vouchers list           # All vouchers
-./ui lo vouchers create         # Create voucher
-./ui lo vouchers create -c 10 -d 60   # 10 vouchers, 60 min
-./ui lo vouchers delete CODE    # Delete voucher
-```
-
-### DPI & Statistics
-
-```bash
-./ui lo dpi stats               # Site DPI stats
-./ui lo dpi client my-MacBook   # Client DPI stats
-./ui lo stats daily             # Daily traffic stats
-./ui lo stats hourly            # Hourly traffic stats
-```
-
----
-
-## Client Groups
-
-Create named groups of client devices for bulk actions like blocking/unblocking. Useful for parental controls, IoT management, and network segmentation.
-
-### Static Groups
-
-Groups with manually managed membership.
-
-```bash
-# Create and manage groups
-./ui groups create "Kids Devices"          # Create group
-./ui groups list                           # List all groups
-./ui groups show "Kids Devices"            # Show group details
-
-# Manage members
-./ui groups add kids-devices AA:BB:CC:DD:EE:FF -a "Timmy iPad"
-./ui groups add kids-devices 11:22:33:44:55:66 -a "Sarah Phone"
-./ui groups members kids-devices           # List members
-./ui groups remove kids-devices "Timmy iPad"
-```
-
-### Auto Groups
-
-Groups that dynamically match clients based on rules.
-
-```bash
-# By vendor/manufacturer
-./ui groups auto "Apple Devices" --vendor "Apple"
-./ui groups auto "IoT Devices" --vendor "Philips,LIFX,Ring,Nest"
-
-# By hostname pattern
-./ui groups auto "Cameras" --name "*camera*,*cam*"
-
-# By network/SSID
-./ui groups auto "Guest Devices" --network "Guest"
-
-# By IP range
-./ui groups auto "Servers" --ip "192.168.1.100-200"
-
-# Combined rules (AND logic)
-./ui groups auto "Kids iPhones" --vendor "Apple" --name "*kid*"
-```
-
-### Bulk Actions
-
-Use groups with client commands for bulk operations.
-
-```bash
-# List all clients in a group
-./ui lo clients list -g kids-devices
-
-# Block all clients in a group (bedtime!)
-./ui lo clients block -g kids-devices -y
-
-# Unblock all clients in a group (morning!)
-./ui lo clients unblock -g kids-devices -y
-
-# Kick/disconnect all clients in a group
-./ui lo clients kick -g kids-devices -y
-```
-
-### Import/Export
-
-```bash
-./ui groups export -o groups-backup.json   # Backup groups
-./ui groups import groups-backup.json      # Restore groups
-```
-
----
-
-### Running Config
-
-Export your network configuration for backup or documentation.
-
-```bash
-# Full configuration
-./ui lo config show             # All sections
-./ui lo config show -o yaml     # YAML export
-./ui lo config show -o json     # JSON export
-
-# Specific sections
-./ui lo config show -s networks     # VLANs, subnets, DHCP
-./ui lo config show -s wireless     # SSIDs, security
-./ui lo config show -s firewall     # Firewall rules
-./ui lo config show -s devices      # Device inventory
-```
-
----
-
-## Claude Desktop Integration
-
-Control your UniFi network using natural language through Claude Desktop.
-
-### Setup
-
-```bash
-# Install MCP server to Claude Desktop
-./ui mcp install
-
-# Verify installation
-./ui mcp check
-
-# Restart Claude Desktop to activate
-```
-
-### Example Prompts
-
-| Ask Claude... | Tool Used |
-|---------------|-----------|
-| "How many devices are on my network?" | `client_count` |
-| "What's my network health?" | `network_health` |
-| "What's my internet speed?" | `internet_speed` |
-| "Find my iPhone" | `find_client` |
-| "Is the TV online?" | `client_status` |
-| "Block the kids iPad" | `block_client` |
-| "Restart the garage AP" | `restart_device` |
-| "Create a guest WiFi voucher" | `create_voucher` |
-
-### Available Tools
-
-```
-Status & Health     client_count        Lookups             Actions
-├── network_status  ├── device_list     ├── find_client     ├── block_client
-├── network_health  └── network_list    ├── find_device     ├── unblock_client
-├── internet_speed                      └── client_status   ├── kick_client
-├── run_speedtest                                           ├── restart_device
-└── isp_performance                                         └── create_voucher
-```
-
-### MCP Commands
-
-```bash
-./ui mcp install    # Add to Claude Desktop config
-./ui mcp check      # Verify setup
-./ui mcp show       # View current config
-./ui mcp remove     # Remove from Claude Desktop
-```
-
-See [MCP Documentation](src/ui_mcp/README.md) for full details.
-
----
-
-## Output Formats
-
-All commands support multiple output formats:
-
-```bash
-./ui devices list               # Table (default)
-./ui devices list -o json       # JSON
-./ui devices list -o csv        # CSV
-./ui lo config show -o yaml     # YAML (config only)
-```
-
-### JSON for Scripting
-
-```bash
-# Count devices
-./ui devices list -o json | jq 'length'
-
-# Find offline devices
-./ui devices list -o json | jq '[.[] | select(.status == "offline")]'
-
-# Get client IPs
-./ui lo clients list -o json | jq -r '.[].ip'
-```
-
-### CI/CD Usage
-
-Spinners are automatically disabled when `CI=true` or `NO_COLOR` is set:
-
-```bash
-# Disable spinner explicitly
-UNIFI_NO_SPINNER=1 ./ui lo health -o json
-
-# In GitHub Actions (CI=true is set automatically)
-./ui lo clients count -o json
-```
+| **Cloud API** | `api.ui.com` | Multi-site management, ISP metrics, SD-WAN |
+| **Local API** | Direct to controller | Real-time client/device control, bulk actions |
+
+**Key Features:**
+- Manage clients, devices, networks, and firewall rules
+- Create client groups for bulk actions (parental controls, IoT management)
+- Export configuration backups in YAML/JSON
+- Natural language control via Claude Desktop (MCP)
+- Multiple output formats: table, JSON, CSV, YAML
+
+**Compatibility:** UDM, UDM Pro, UDM SE, Cloud Key, self-hosted controllers
 
 ---
 
 ## Installation
 
-### Prerequisites
-
-- Python 3.10+
-- Conda (recommended) or pip
-
-### Using Conda
+### Using Conda (Recommended)
 
 ```bash
+git clone https://github.com/vedanta/ui-cli.git
+cd ui-cli
 conda env create -f environment.yml
 conda activate ui-cli
 pip install -e .
@@ -445,6 +52,8 @@ pip install -e .
 ### Using pip
 
 ```bash
+git clone https://github.com/vedanta/ui-cli.git
+cd ui-cli
 python -m venv venv
 source venv/bin/activate
 pip install -e .
@@ -453,36 +62,221 @@ pip install -e .
 ### Using Docker
 
 ```bash
-# Build the image
 docker build -t ui-cli .
-
-# Run with environment variables
-docker run --rm -e UNIFI_API_KEY=your-key ui-cli status
-
-# Run with .env file
-docker run --rm --env-file .env ui-cli hosts list
-
-# Run local controller commands
 docker run --rm --env-file .env ui-cli lo clients list
-
-# Interactive mode
-docker run -it --rm --env-file .env ui-cli shell
 ```
 
-**Docker Compose:**
+---
+
+## Quick Start
+
+### 1. Configure Credentials
 
 ```bash
-# Run commands
-docker-compose run --rm ui-cli status
-docker-compose run --rm ui-cli lo clients list
+cp .env.example .env
 ```
 
-### Running
+Edit `.env` with your credentials:
 
 ```bash
-./ui --help          # Using wrapper script
-ui --help            # After pip install
-docker run ui-cli    # Using Docker
+# Cloud API - get key from unifi.ui.com → Settings → API
+UNIFI_API_KEY=your-api-key
+
+# Local Controller
+UNIFI_CONTROLLER_URL=https://192.168.1.1
+UNIFI_CONTROLLER_USERNAME=admin
+UNIFI_CONTROLLER_PASSWORD=yourpassword
+UNIFI_CONTROLLER_SITE=default
+UNIFI_CONTROLLER_VERIFY_SSL=false
+```
+
+### 2. Verify Connection
+
+```bash
+./ui status              # Cloud API
+./ui lo health           # Local controller
+```
+
+### 3. Explore
+
+```bash
+./ui --help              # All commands
+./ui lo clients list     # List connected clients
+./ui lo devices list     # List network devices
+```
+
+---
+
+## Commands
+
+### Cloud API
+
+Manage multiple sites via UniFi Site Manager.
+
+```bash
+# Controllers and sites
+./ui hosts list                    # List all controllers
+./ui sites list                    # List all sites
+
+# Devices across all sites
+./ui devices list                  # List all devices
+./ui devices count --by model      # Count by model
+
+# ISP performance
+./ui isp metrics                   # Last 7 days
+./ui isp metrics --hours 24        # Last 24 hours
+
+# SD-WAN
+./ui sdwan list                    # List configurations
+```
+
+### Local Controller
+
+Direct connection for real-time control. Use `./ui lo` or `./ui local`.
+
+```bash
+# Health and monitoring
+./ui lo health                     # Site health (WAN/LAN/WLAN/VPN)
+./ui lo events list                # Recent events
+
+# Clients
+./ui lo clients list               # Connected clients
+./ui lo clients list -W            # Wireless only
+./ui lo clients list -n "Guest"    # Filter by network
+./ui lo clients get "iPhone"       # Find by name
+./ui lo clients block "iPhone"     # Block client
+./ui lo clients kick "iPhone"      # Disconnect client
+
+# Devices
+./ui lo devices list               # Network devices (APs, switches)
+./ui lo devices restart "Office-AP"
+./ui lo devices locate "Office-AP" # Blink LED
+
+# Networks and firewall
+./ui lo networks list              # VLANs and subnets
+./ui lo firewall list              # Firewall rules
+./ui lo portfwd list               # Port forwarding
+
+# Guest vouchers
+./ui lo vouchers create -c 5 -d 60 # 5 vouchers, 60 min each
+./ui lo vouchers list
+
+# Traffic stats
+./ui lo dpi stats                  # DPI by application
+./ui lo stats daily                # Daily bandwidth
+
+# Configuration backup
+./ui lo config show -o yaml > backup.yaml
+```
+
+---
+
+## Client Groups
+
+Organize devices into groups for bulk actions. Perfect for parental controls, IoT management, or network segmentation.
+
+### Static Groups (Manual Membership)
+
+```bash
+# Create group and add devices
+./ui groups create "Kids Devices"
+./ui groups add kids-devices AA:BB:CC:DD:EE:FF -a "iPad"
+./ui groups add kids-devices 11:22:33:44:55:66 -a "Phone"
+
+# View group
+./ui groups show kids-devices
+./ui groups members kids-devices
+```
+
+### Auto Groups (Pattern-Based)
+
+```bash
+# Match by vendor
+./ui groups auto "Apple Devices" --vendor "Apple"
+
+# Match by name pattern
+./ui groups auto "Cameras" --name "*cam*"
+
+# Match by network
+./ui groups auto "Guests" --network "Guest"
+
+# Match by IP range
+./ui groups auto "Servers" --ip "192.168.1.100-200"
+
+# Combine rules (AND logic)
+./ui groups auto "Kids Apple" --vendor "Apple" --name "*kid*"
+```
+
+### Bulk Actions
+
+```bash
+# Block all devices in group (bedtime!)
+./ui lo clients block -g kids-devices -y
+
+# Unblock all (morning!)
+./ui lo clients unblock -g kids-devices -y
+
+# View group status
+./ui lo clients list -g kids-devices
+```
+
+---
+
+## Claude Desktop Integration
+
+Control your network with natural language via [Claude Desktop](https://claude.ai/download).
+
+### Setup
+
+```bash
+./ui mcp install         # Add to Claude Desktop
+./ui mcp check           # Verify setup
+# Restart Claude Desktop
+```
+
+### Example Prompts
+
+| You say... | Claude does... |
+|------------|----------------|
+| "How many devices are connected?" | Counts clients |
+| "Block the kids iPad" | Blocks specific client |
+| "Block all kids devices" | Blocks entire group |
+| "What's my internet speed?" | Shows speed test results |
+| "Restart the garage AP" | Restarts device |
+| "Create a guest voucher" | Creates WiFi voucher |
+
+### Available Tools (21)
+
+| Category | Tools |
+|----------|-------|
+| Status | `network_status`, `network_health`, `internet_speed`, `run_speedtest`, `isp_performance` |
+| Lists | `client_count`, `device_list`, `network_list` |
+| Lookup | `find_client`, `find_device`, `client_status` |
+| Actions | `block_client`, `unblock_client`, `kick_client`, `restart_device`, `create_voucher` |
+| Groups | `list_groups`, `get_group`, `block_group`, `unblock_group`, `group_status` |
+
+---
+
+## Output Formats
+
+```bash
+./ui devices list              # Table (default)
+./ui devices list -o json      # JSON
+./ui devices list -o csv       # CSV
+./ui lo config show -o yaml    # YAML
+```
+
+### Scripting with JSON
+
+```bash
+# Count clients
+./ui lo clients list -o json | jq 'length'
+
+# Get all client IPs
+./ui lo clients list -o json | jq -r '.[].ip'
+
+# Find offline devices
+./ui devices list -o json | jq '[.[] | select(.status == "offline")]'
 ```
 
 ---
@@ -491,174 +285,73 @@ docker run ui-cli    # Using Docker
 
 ```
 ./ui
-├── status              # Check API connection
-├── version             # Show CLI version
-├── speedtest           # Run speedtest on gateway
-├── hosts               # Cloud: manage controllers
-├── sites               # Cloud: manage sites
-├── devices             # Cloud: manage devices
-├── isp                 # Cloud: ISP metrics
-├── sdwan               # Cloud: SD-WAN configs
-├── groups              # Client groups for bulk actions
-├── local (lo)          # Local controller commands
-└── mcp                 # Claude Desktop MCP server
+├── status                 # Check cloud API connection
+├── version                # Show CLI version
+├── hosts                  # Manage controllers
+├── sites                  # Manage sites
+├── devices                # Manage devices (cloud)
+├── isp                    # ISP metrics
+├── sdwan                  # SD-WAN configuration
+├── groups                 # Client groups
+├── lo / local             # Local controller commands
+│   ├── health             # Site health
+│   ├── clients            # Client management
+│   ├── devices            # Device management
+│   ├── networks           # Network/VLAN info
+│   ├── firewall           # Firewall rules
+│   ├── portfwd            # Port forwarding
+│   ├── vouchers           # Guest vouchers
+│   ├── dpi                # DPI statistics
+│   ├── stats              # Traffic statistics
+│   ├── events             # Event log
+│   └── config             # Configuration export
+└── mcp                    # Claude Desktop integration
 ```
 
 <details>
-<summary><strong>Cloud API Commands</strong> (click to expand)</summary>
-
-```
-./ui hosts
-├── list                # List all controllers
-└── get <ID>            # Get controller details
-
-./ui sites
-└── list                # List all sites
-
-./ui devices
-├── list                # List all devices
-│   ├── --host <ID>     # Filter by controller
-│   └── --verbose       # Show details
-└── count               # Count devices
-    └── --by <field>    # Group by model/status/host
-
-./ui isp
-└── metrics             # ISP performance metrics
-    ├── --interval      # 5m, 1h (default: 1h)
-    └── --hours         # Time range (default: 168)
-
-./ui sdwan
-├── list                # List SD-WAN configs
-├── get <ID>            # Get config details
-└── status <ID>         # Deployment status
-```
-
-</details>
-
-<details>
-<summary><strong>Local Controller Commands</strong> (click to expand)</summary>
+<summary><strong>Full Command Tree</strong></summary>
 
 ```
 ./ui lo clients
-├── list                # Connected clients
-│   ├── -w              # Wired only
-│   ├── -W              # Wireless only
-│   ├── -n <network>    # Filter by network
-│   └── -g <group>      # Filter by group
-├── all                 # All clients (inc. offline)
-├── get <name|MAC>      # Client details
-├── status <name|MAC>   # Full client status
-├── block <name|MAC>    # Block client
-│   └── -g <group>      # Block all in group
-├── unblock <name|MAC>  # Unblock client
-│   └── -g <group>      # Unblock all in group
-├── kick <name|MAC>     # Disconnect client
-│   └── -g <group>      # Kick all in group
-├── count               # Count by category
-│   └── --by <field>    # type/network/vendor/ap
-└── duplicates          # Find duplicate names
+├── list [-w|-W] [-n network] [-g group]
+├── all                    # Include offline
+├── get <name|MAC>
+├── status <name|MAC>
+├── block <name|MAC> [-g group]
+├── unblock <name|MAC> [-g group]
+├── kick <name|MAC> [-g group]
+├── count [--by type|network|vendor|ap]
+└── duplicates
 
 ./ui lo devices
-├── list                # List network devices
-├── get <ID|MAC|name>   # Device details
-├── restart <device>    # Restart device
-├── upgrade <device>    # Upgrade firmware
-├── locate <device>     # Toggle locate LED
-│   └── --off           # Turn off LED
-└── adopt <MAC>         # Adopt new device
-
-./ui lo networks
-├── list                # List networks/VLANs
-└── get <ID>            # Network details
-
-./ui lo firewall
-├── list                # List firewall rules
-│   └── --ruleset       # Filter by ruleset
-└── groups              # List address/port groups
-
-./ui lo portfwd
-└── list                # List port forwards
+├── list [-v]
+├── get <name|MAC|ID>
+├── restart <device>
+├── upgrade <device>
+├── locate <device> [--off]
+└── adopt <MAC>
 
 ./ui lo vouchers
-├── list                # List guest vouchers
-├── create              # Create voucher(s)
-│   ├── -c <count>      # Number to create
-│   ├── -d <minutes>    # Duration
-│   ├── -q <MB>         # Data quota
-│   ├── --up <kbps>     # Upload limit
-│   └── --down <kbps>   # Download limit
-└── delete <code>       # Delete voucher
+├── list
+├── create [-c count] [-d minutes] [-q MB]
+└── delete <code>
 
-./ui lo dpi
-├── stats               # Site DPI statistics
-└── client <name|MAC>   # Per-client DPI
-
-./ui lo stats
-├── daily               # Daily traffic stats
-│   └── --days <n>      # Number of days
-└── hourly              # Hourly traffic stats
-    └── --hours <n>     # Number of hours
-
-./ui lo events
-└── list                # Recent events
-    └── -l <limit>      # Number of events
-
-./ui lo health          # Site health summary
-
-./ui lo config
-└── show                # Export running config
-    ├── -o <format>     # table/json/yaml
-    ├── -s <section>    # networks/wireless/firewall/devices
-    └── --show-secrets  # Include passwords
-```
-
-</details>
-
-<details>
-<summary><strong>Client Groups Commands</strong> (click to expand)</summary>
-
-```
 ./ui groups
-├── list                # List all groups
-├── create <name>       # Create static group
-│   └── -d <desc>       # Description
-├── show <name>         # Show group details
-├── delete <name>       # Delete group
-├── edit <name>         # Edit group
-│   ├── -n <name>       # New name
-│   └── -d <desc>       # New description
-├── add <group> <MAC>   # Add member
-│   └── -a <alias>      # Set alias
-├── remove <group> <id> # Remove member
-├── alias <group> <id>  # Set/clear alias
-├── members <group>     # List members
-├── clear <group>       # Remove all members
-├── auto <name>         # Create auto group
-│   ├── --vendor        # Match by vendor
-│   ├── --name          # Match by name pattern
-│   ├── --hostname      # Match by hostname
-│   ├── --network       # Match by network/SSID
-│   ├── --ip            # Match by IP range
-│   ├── --mac           # Match by MAC prefix
-│   └── --type          # Match by wired/wireless
-├── export              # Export to JSON
-└── import <file>       # Import from JSON
+├── list
+├── create <name> [-d desc]
+├── show <name>
+├── delete <name>
+├── edit <name> [-n name] [-d desc]
+├── add <group> <MAC> [-a alias]
+├── remove <group> <MAC|alias>
+├── members <group>
+├── clear <group>
+├── auto <name> [--vendor|--name|--network|--ip|--mac|--type]
+├── export [-o file]
+└── import <file>
 ```
 
 </details>
-
----
-
-## Documentation
-
-| Document | Description |
-|----------|-------------|
-| [User Guide](USERGUIDE.md) | Complete documentation with examples |
-| [Client Groups](https://vedanta.github.io/ui-cli/groups/) | Groups feature guide and reference |
-| [MCP Server](src/ui_mcp/README.md) | Claude Desktop integration guide |
-| [MCP Architecture](src/ui_mcp/ARCHITECTURE.md) | Technical design and data flow |
-| [Roadmap](ROADMAP.md) | Planned features and progress |
-| [Changelog](CHANGELOG.md) | Version history |
 
 ---
 
@@ -666,19 +359,26 @@ docker run ui-cli    # Using Docker
 
 | Error | Solution |
 |-------|----------|
-| "API key not configured" | Add `UNIFI_API_KEY` to `.env` |
-| "Invalid API key" | Check key at [unifi.ui.com](https://unifi.ui.com) → Settings → API |
-| "Connection timeout" | Verify internet access to `api.ui.com` |
-| "Controller URL not configured" | Add `UNIFI_CONTROLLER_URL` to `.env` |
-| "Invalid username or password" | Verify credentials work in UniFi web UI |
-| "SSL certificate verify failed" | Set `UNIFI_CONTROLLER_VERIFY_SSL=false` |
-| "Connection timeout" (local) | Use `--timeout 60` for slow connections |
+| API key not configured | Add `UNIFI_API_KEY` to `.env` |
+| Invalid API key | Regenerate at unifi.ui.com → Settings → API |
+| Controller URL not configured | Add `UNIFI_CONTROLLER_URL` to `.env` |
+| Invalid username/password | Verify credentials in UniFi web UI |
+| SSL certificate error | Set `UNIFI_CONTROLLER_VERIFY_SSL=false` |
+| Connection timeout | Use `./ui lo --timeout 60 health` |
+| Session expired | Delete `~/.config/ui-cli/session.json` |
 
 ---
 
-## Contributing
+## Documentation
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+| Resource | Description |
+|----------|-------------|
+| [Online Docs](https://vedanta.github.io/ui-cli) | Full documentation site |
+| [User Guide](USERGUIDE.md) | Detailed usage examples |
+| [MCP Guide](src/ui_mcp/README.md) | Claude Desktop setup |
+| [Changelog](CHANGELOG.md) | Version history |
+
+---
 
 ## License
 
