@@ -1,9 +1,28 @@
 """Configuration management using pydantic-settings."""
 
+import os
 from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _get_config_files() -> tuple[str, ...]:
+    """Get config files in priority order (first found wins).
+
+    Priority:
+      1. XDG config (~/.config/ui-cli/config)
+      2. Home dotfile (~/.ui-cli.env)
+      3. Project local (.env)
+    """
+    xdg_config = os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config"))
+    candidates = [
+        Path(xdg_config) / "ui-cli" / "config",
+        Path.home() / ".ui-cli.env",
+        Path(".env"),
+    ]
+    # Return all existing files (pydantic-settings will use first match per variable)
+    return tuple(str(p) for p in candidates if p.exists())
 
 
 class Settings(BaseSettings):
@@ -11,7 +30,7 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_prefix="UNIFI_",
-        env_file=".env",
+        env_file=_get_config_files(),
         env_file_encoding="utf-8",
         extra="ignore",
     )

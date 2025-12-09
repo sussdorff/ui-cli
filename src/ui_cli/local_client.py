@@ -391,6 +391,114 @@ class UniFiLocalClient:
         response = await self.get("/rest/wlanconf")
         return response.get("data", [])
 
+    # ========== AP Groups (Broadcasting Groups) ==========
+
+    async def _ensure_authenticated(self) -> None:
+        """Ensure we have a valid session by making a simple API call."""
+        if not self._cookies:
+            # Make a simple call to trigger authentication
+            await self.get("/stat/health")
+
+    async def _v2_request(
+        self, method: str, endpoint: str, data: dict[str, Any] | None = None
+    ) -> Any:
+        """Make a request to the v2 API.
+
+        Args:
+            method: HTTP method (GET, POST, PUT, DELETE)
+            endpoint: API endpoint path (without base URL)
+            data: Optional JSON payload
+
+        Returns:
+            Response JSON or True for successful DELETE
+        """
+        await self._ensure_authenticated()
+
+        url = f"{self.controller_url}/proxy/network/v2/api/site/{self.site}{endpoint}"
+        headers = {}
+        if self._csrf_token:
+            headers["x-csrf-token"] = self._csrf_token
+        if method in ("POST", "PUT"):
+            headers["Content-Type"] = "application/json"
+
+        async with httpx.AsyncClient(
+            verify=self.verify_ssl, timeout=self.timeout, cookies=self._cookies
+        ) as client:
+            if method == "GET":
+                response = await client.get(url, headers=headers)
+            elif method == "POST":
+                response = await client.post(url, headers=headers, json=data)
+            elif method == "PUT":
+                response = await client.put(url, headers=headers, json=data)
+            elif method == "DELETE":
+                response = await client.delete(url, headers=headers)
+            else:
+                raise ValueError(f"Unsupported HTTP method: {method}")
+
+            if response.status_code == 401:
+                raise LocalAuthenticationError("Session expired")
+            if not response.is_success:
+                raise LocalAPIError(
+                    f"API error: {response.text}", status_code=response.status_code
+                )
+
+            if method == "DELETE":
+                return True
+            return response.json()
+
+    async def get_ap_groups(self) -> list[dict[str, Any]]:
+        """Get all AP groups (broadcasting groups).
+
+        AP groups determine which WLANs are broadcast on which Access Points.
+        Uses the v2 API endpoint.
+
+        Returns:
+            List of AP group dicts with keys: _id, name, device_macs, for_wlanconf
+        """
+        return await self._v2_request("GET", "/apgroups")
+
+    async def create_ap_group(
+        self, name: str, device_macs: list[str] | None = None
+    ) -> dict[str, Any]:
+        """Create a new AP group.
+
+        Args:
+            name: Name for the new AP group
+            device_macs: Optional list of device MAC addresses to include
+
+        Returns:
+            The created AP group dict
+        """
+        payload = {"name": name, "device_macs": device_macs or []}
+        return await self._v2_request("POST", "/apgroups", payload)
+
+    async def update_ap_group(
+        self, group_id: str, name: str, device_macs: list[str]
+    ) -> dict[str, Any]:
+        """Update an existing AP group.
+
+        Args:
+            group_id: The AP group ID to update
+            name: New name for the group
+            device_macs: List of device MAC addresses for the group
+
+        Returns:
+            The updated AP group dict
+        """
+        payload = {"name": name, "device_macs": device_macs}
+        return await self._v2_request("PUT", f"/apgroups/{group_id}", payload)
+
+    async def delete_ap_group(self, group_id: str) -> bool:
+        """Delete an AP group.
+
+        Args:
+            group_id: The AP group ID to delete
+
+        Returns:
+            True if deletion was successful
+        """
+        return await self._v2_request("DELETE", f"/apgroups/{group_id}")
+
     async def get_firewall_rules(self) -> list[dict[str, Any]]:
         """Get all firewall rules."""
         response = await self.get("/rest/firewallrule")

@@ -205,6 +205,184 @@ class TestUniFiLocalClientMethods:
             assert len(result) == 1
 
 
+class TestUniFiLocalClientWlanMethods:
+    """Tests for WLAN methods."""
+
+    @pytest.fixture
+    def mock_settings(self):
+        """Mock settings for testing."""
+        with patch("ui_cli.local_client.settings") as mock:
+            mock.controller_url = "https://192.168.1.1"
+            mock.controller_username = "admin"
+            mock.controller_password = "password"
+            mock.controller_site = "default"
+            mock.controller_verify_ssl = False
+            mock.timeout = 30
+            mock.session_file = MagicMock()
+            mock.session_file.exists.return_value = False
+            yield mock
+
+    @pytest.mark.asyncio
+    async def test_get_wlans(self, mock_settings, mock_wlans_response):
+        """Test getting WLANs."""
+        client = UniFiLocalClient()
+
+        with patch.object(client, "get", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = {"data": mock_wlans_response}
+
+            wlans = await client.get_wlans()
+
+            assert len(wlans) == 3
+            assert wlans[0]["name"] == "Home WiFi"
+            assert wlans[1]["is_guest"] is True
+            mock_get.assert_called_once_with("/rest/wlanconf")
+
+
+class TestUniFiLocalClientAPGroupMethods:
+    """Tests for AP group (broadcasting group) methods."""
+
+    @pytest.fixture
+    def mock_settings(self):
+        """Mock settings for testing."""
+        with patch("ui_cli.local_client.settings") as mock:
+            mock.controller_url = "https://192.168.1.1"
+            mock.controller_username = "admin"
+            mock.controller_password = "password"
+            mock.controller_site = "default"
+            mock.controller_verify_ssl = False
+            mock.timeout = 30
+            mock.session_file = MagicMock()
+            mock.session_file.exists.return_value = False
+            yield mock
+
+    @pytest.fixture
+    def mock_ap_groups_response(self):
+        """Sample AP groups response."""
+        return [
+            {
+                "_id": "group-001",
+                "name": "All APs",
+                "device_macs": ["aa:bb:cc:dd:ee:ff", "11:22:33:44:55:66"],
+                "attr_no_delete": True,
+            },
+            {
+                "_id": "group-002",
+                "name": "Office",
+                "device_macs": ["aa:bb:cc:dd:ee:ff"],
+            },
+        ]
+
+    @pytest.mark.asyncio
+    async def test_get_ap_groups(self, mock_settings, mock_ap_groups_response):
+        """Test getting AP groups."""
+        client = UniFiLocalClient()
+
+        with patch.object(
+            client, "_v2_request", new_callable=AsyncMock
+        ) as mock_request:
+            mock_request.return_value = mock_ap_groups_response
+
+            groups = await client.get_ap_groups()
+
+            assert len(groups) == 2
+            assert groups[0]["name"] == "All APs"
+            assert len(groups[0]["device_macs"]) == 2
+            mock_request.assert_called_once_with("GET", "/apgroups")
+
+    @pytest.mark.asyncio
+    async def test_create_ap_group(self, mock_settings):
+        """Test creating an AP group."""
+        client = UniFiLocalClient()
+
+        with patch.object(
+            client, "_v2_request", new_callable=AsyncMock
+        ) as mock_request:
+            mock_request.return_value = {
+                "_id": "group-new",
+                "name": "Test Group",
+                "device_macs": [],
+            }
+
+            result = await client.create_ap_group("Test Group")
+
+            assert result["name"] == "Test Group"
+            mock_request.assert_called_once_with(
+                "POST", "/apgroups", {"name": "Test Group", "device_macs": []}
+            )
+
+    @pytest.mark.asyncio
+    async def test_create_ap_group_with_devices(self, mock_settings):
+        """Test creating an AP group with devices."""
+        client = UniFiLocalClient()
+
+        with patch.object(
+            client, "_v2_request", new_callable=AsyncMock
+        ) as mock_request:
+            mock_request.return_value = {
+                "_id": "group-new",
+                "name": "Test Group",
+                "device_macs": ["aa:bb:cc:dd:ee:ff"],
+            }
+
+            result = await client.create_ap_group(
+                "Test Group", device_macs=["aa:bb:cc:dd:ee:ff"]
+            )
+
+            assert result["name"] == "Test Group"
+            assert "aa:bb:cc:dd:ee:ff" in result["device_macs"]
+            mock_request.assert_called_once_with(
+                "POST",
+                "/apgroups",
+                {"name": "Test Group", "device_macs": ["aa:bb:cc:dd:ee:ff"]},
+            )
+
+    @pytest.mark.asyncio
+    async def test_update_ap_group(self, mock_settings):
+        """Test updating an AP group."""
+        client = UniFiLocalClient()
+
+        with patch.object(
+            client, "_v2_request", new_callable=AsyncMock
+        ) as mock_request:
+            mock_request.return_value = {
+                "_id": "group-002",
+                "name": "Updated Group",
+                "device_macs": ["aa:bb:cc:dd:ee:ff", "11:22:33:44:55:66"],
+            }
+
+            result = await client.update_ap_group(
+                "group-002",
+                "Updated Group",
+                ["aa:bb:cc:dd:ee:ff", "11:22:33:44:55:66"],
+            )
+
+            assert result["name"] == "Updated Group"
+            assert len(result["device_macs"]) == 2
+            mock_request.assert_called_once_with(
+                "PUT",
+                "/apgroups/group-002",
+                {
+                    "name": "Updated Group",
+                    "device_macs": ["aa:bb:cc:dd:ee:ff", "11:22:33:44:55:66"],
+                },
+            )
+
+    @pytest.mark.asyncio
+    async def test_delete_ap_group(self, mock_settings):
+        """Test deleting an AP group."""
+        client = UniFiLocalClient()
+
+        with patch.object(
+            client, "_v2_request", new_callable=AsyncMock
+        ) as mock_request:
+            mock_request.return_value = True
+
+            result = await client.delete_ap_group("group-002")
+
+            assert result is True
+            mock_request.assert_called_once_with("DELETE", "/apgroups/group-002")
+
+
 class TestLocalClientFormatting:
     """Tests for Local Controller data formatting helpers."""
 

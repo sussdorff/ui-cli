@@ -566,3 +566,5 @@ def adopt_device(
     else:
         print_error(f"Failed to adopt '{identifier}'")
         raise typer.Exit(1)
+
+

@@ -138,3 +138,83 @@ class TestLocalControllerReadOnlyActions:
 
         assert isinstance(alarms, list)
         # May be empty if no alarms
+
+
+@pytest.mark.integration
+class TestLocalControllerWlanAPI:
+    """Integration tests for WLAN management."""
+
+    @pytest.fixture
+    def client(self, integration_env_vars):
+        """Create a real Local Controller client."""
+        return UniFiLocalClient()
+
+    @pytest.mark.asyncio
+    async def test_get_wlans(self, client):
+        """Test getting WLANs from real controller."""
+        wlans = await client.get_wlans()
+
+        assert isinstance(wlans, list)
+        assert len(wlans) > 0  # Should have at least one WLAN
+
+        wlan = wlans[0]
+        assert "_id" in wlan
+        assert "name" in wlan
+        assert "security" in wlan
+
+
+@pytest.mark.integration
+class TestLocalControllerAPGroupAPI:
+    """Integration tests for AP group (broadcasting group) management."""
+
+    @pytest.fixture
+    def client(self, integration_env_vars):
+        """Create a real Local Controller client."""
+        return UniFiLocalClient()
+
+    @pytest.mark.asyncio
+    async def test_get_ap_groups(self, client):
+        """Test getting AP groups from real controller."""
+        groups = await client.get_ap_groups()
+
+        assert isinstance(groups, list)
+        assert len(groups) > 0  # Should have at least 'All APs'
+
+        group = groups[0]
+        assert "_id" in group
+        assert "name" in group
+        assert "device_macs" in group
+
+    @pytest.mark.asyncio
+    async def test_ap_group_crud_cycle(self, client):
+        """Test full CRUD cycle for AP groups."""
+        # Create a test group
+        test_group_name = "UI-CLI Test AP Group"
+        created = await client.create_ap_group(test_group_name)
+
+        assert created["name"] == test_group_name
+        assert created.get("device_macs", []) == []
+        group_id = created["_id"]
+
+        try:
+            # Verify group appears in list
+            groups = await client.get_ap_groups()
+            group_ids = [g["_id"] for g in groups]
+            assert group_id in group_ids
+
+            # Update group (add a device MAC - using a fake one for test)
+            # Note: Using a real device MAC would require knowing one exists
+            updated = await client.update_ap_group(
+                group_id, test_group_name, []
+            )
+            assert updated["name"] == test_group_name
+
+        finally:
+            # Clean up: delete the test group
+            success = await client.delete_ap_group(group_id)
+            assert success is True
+
+            # Verify group is deleted
+            groups = await client.get_ap_groups()
+            group_ids = [g["_id"] for g in groups]
+            assert group_id not in group_ids

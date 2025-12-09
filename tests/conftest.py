@@ -265,6 +265,105 @@ def mock_daily_stats_response() -> list[dict[str, Any]]:
 
 
 # ============================================================
+# WLAN Fixtures
+# ============================================================
+
+@pytest.fixture
+def mock_wlans_response() -> list[dict[str, Any]]:
+    """Sample WLANs response from Local Controller API."""
+    return [
+        {
+            "_id": "wlan-001",
+            "name": "Home WiFi",
+            "enabled": True,
+            "security": "wpapsk",
+            "wpa_mode": "wpa2",
+            "vlan": None,
+            "hide_ssid": False,
+            "pmf_mode": "optional",
+            "fast_roaming_enabled": True,
+            "wlan_band": "both",
+            "is_guest": False,
+            "networkconf_id": "net-001",
+        },
+        {
+            "_id": "wlan-002",
+            "name": "Guest Network",
+            "enabled": True,
+            "security": "wpapsk",
+            "wpa_mode": "wpa2",
+            "vlan": 100,
+            "hide_ssid": False,
+            "pmf_mode": "disabled",
+            "fast_roaming_enabled": False,
+            "wlan_band": "both",
+            "is_guest": True,
+            "guest_lan_isolation": True,
+            "networkconf_id": "net-002",
+        },
+        {
+            "_id": "wlan-003",
+            "name": "IoT Devices",
+            "enabled": True,
+            "security": "wpapsk",
+            "wpa_mode": "wpa2",
+            "vlan": 50,
+            "hide_ssid": True,
+            "pmf_mode": "disabled",
+            "fast_roaming_enabled": False,
+            "wlan_band": "2g",
+            "is_guest": False,
+            "networkconf_id": "net-003",
+        },
+    ]
+
+
+@pytest.fixture
+def mock_wlan_groups_response() -> list[dict[str, Any]]:
+    """Sample WLAN groups response from Local Controller API."""
+    return [
+        {
+            "_id": "group-001",
+            "name": "Default",
+            "wlanconf_ids": ["wlan-001", "wlan-002", "wlan-003"],
+        },
+        {
+            "_id": "group-002",
+            "name": "Guest Only",
+            "wlanconf_ids": ["wlan-002"],
+        },
+        {
+            "_id": "group-003",
+            "name": "Mesh Only",
+            "wlanconf_ids": [],
+        },
+    ]
+
+
+@pytest.fixture
+def mock_ap_device() -> dict[str, Any]:
+    """Sample AP device for WLAN group assignment tests."""
+    return {
+        "_id": "device-ap-001",
+        "mac": "e0:63:da:1d:8d:9f",
+        "ip": "192.168.1.50",
+        "name": "Gartenhaus AP",
+        "model": "U6-Mesh",
+        "type": "uap",
+        "version": "6.6.55",
+        "state": 1,
+        "uptime": 259200,
+        "num_sta": 5,
+        "wlangroup_id_ng": "group-001",
+        "wlangroup_id_na": "group-001",
+        "radio_table": [
+            {"radio": "ng", "channel": 6},
+            {"radio": "na", "channel": 149},
+        ],
+    }
+
+
+# ============================================================
 # Groups Fixtures
 # ============================================================
 
@@ -345,14 +444,31 @@ def mock_clients_for_groups() -> list[dict[str, Any]]:
 
 @pytest.fixture
 def integration_env_vars():
-    """Check if integration test environment variables are set."""
-    required_vars = [
-        "UNIFI_API_KEY",
-        "UNIFI_CONTROLLER_URL",
-        "UNIFI_CONTROLLER_USERNAME",
-        "UNIFI_CONTROLLER_PASSWORD",
-    ]
-    missing = [var for var in required_vars if not os.getenv(var)]
-    if missing:
-        pytest.skip(f"Missing environment variables: {', '.join(missing)}")
+    """Check if integration test configuration is available.
+
+    Checks both environment variables and config files
+    (XDG config, home dotfile, project .env).
+    """
+    from ui_cli.config import settings
+
+    # For local controller tests, check if local controller is configured
+    if not settings.is_local_configured:
+        pytest.skip(
+            "Local controller not configured. "
+            "Set UNIFI_CONTROLLER_URL, UNIFI_CONTROLLER_USERNAME, "
+            "UNIFI_CONTROLLER_PASSWORD in ~/.config/ui-cli/config or .env"
+        )
+    return True
+
+
+@pytest.fixture
+def integration_env_vars_site_manager():
+    """Check if Site Manager API is configured for integration tests."""
+    from ui_cli.config import settings
+
+    if not settings.is_configured:
+        pytest.skip(
+            "Site Manager API not configured. "
+            "Set UNIFI_API_KEY in ~/.config/ui-cli/config or .env"
+        )
     return True
