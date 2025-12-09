@@ -1,0 +1,3 @@
+[submodule "vendor/unifi-api-client"]
+	path = vendor/unifi-api-client
+	url = https://github.com/Art-of-WiFi/UniFi-API-client.git

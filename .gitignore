@@ -1,7 +1,6 @@
 # Claude Code
 .claude/
 .claude*
-CLAUDE.md
 
 # Environment variables (contains secrets)
 .env
