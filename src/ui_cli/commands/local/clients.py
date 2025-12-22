@@ -22,6 +22,7 @@ CLIENT_COLUMNS = [
     ("name", "Name"),
     ("mac", "MAC"),
     ("ip", "IP"),
+    ("oui", "Vendor"),
     ("network", "Network"),
     ("type", "Type"),
     ("signal", "Signal"),
@@ -342,6 +343,137 @@ def get_client(
             if value:
                 console.print(f"  [dim]{key}:[/dim] {value}")
         console.print()
+
+
+@app.command("set-ip")
+def set_fixed_ip(
+    identifier: Annotated[
+        str,
+        typer.Argument(help="Client MAC address or name"),
+    ],
+    ip: Annotated[
+        str,
+        typer.Argument(help="Fixed IP address to assign"),
+    ],
+    yes: Annotated[
+        bool,
+        typer.Option("--yes", "-y", help="Skip confirmation prompt"),
+    ] = False,
+    no_kick: Annotated[
+        bool,
+        typer.Option("--no-kick", help="Don't kick client to force DHCP renewal"),
+    ] = False,
+    output: Annotated[
+        OutputFormat,
+        typer.Option("--output", "-o", help="Output format"),
+    ] = OutputFormat.TABLE,
+) -> None:
+    """Set a fixed IP address for a client (DHCP reservation).
+
+    By default, kicks the client after setting the IP to force immediate
+    DHCP renewal. Use --no-kick to skip this.
+
+    Examples:
+        ui lo clients set-ip "Shelly Keller" 192.168.30.21
+        ui lo clients set-ip AA:BB:CC:DD:EE:FF 192.168.30.21 -y
+        ui lo clients set-ip "Device" 192.168.1.100 --no-kick
+    """
+    import re
+
+    # Validate IP address format
+    ip_pattern = r'^(\d{1,3}\.){3}\d{1,3}$'
+    if not re.match(ip_pattern, ip):
+        console.print(f"[red]Invalid IP address:[/red] {ip}")
+        raise typer.Exit(1)
+
+    # Validate IP octets
+    octets = [int(x) for x in ip.split('.')]
+    if any(o < 0 or o > 255 for o in octets):
+        console.print(f"[red]Invalid IP address:[/red] {ip}")
+        raise typer.Exit(1)
+
+    async def _resolve_and_get_id():
+        api_client = UniFiLocalClient()
+        mac, name = await resolve_client_identifier(api_client, identifier)
+        if not mac:
+            return None, None, None, api_client
+
+        # Get user record to find the _id
+        # Need to search all users for this MAC
+        response = await api_client.get("/rest/user")
+        users = response.get("data", [])
+        user_id = None
+        for user in users:
+            if user.get("mac", "").lower() == mac.lower():
+                user_id = user.get("_id")
+                break
+
+        return mac, name, user_id, api_client
+
+    try:
+        mac, name, user_id, api_client = run_with_spinner(
+            _resolve_and_get_id(), "Finding client..."
+        )
+    except Exception as e:
+        handle_error(e)
+        return
+
+    if not mac:
+        console.print(f"[yellow]Client not found:[/yellow] {identifier}")
+        raise typer.Exit(1)
+
+    if not user_id:
+        console.print(f"[red]Error:[/red] Could not find user record for {identifier}")
+        console.print("[dim]The client may not have connected recently enough to have a user record.[/dim]")
+        raise typer.Exit(1)
+
+    display = f"{name} ({mac.upper()})" if name else mac.upper()
+
+    # Confirm action
+    if not yes:
+        if not typer.confirm(f"Set fixed IP {ip} for {display}?"):
+            console.print("[dim]Cancelled[/dim]")
+            raise typer.Exit(0)
+
+    # Execute action
+    async def _set_ip():
+        return await api_client.set_client_fixed_ip(user_id, fixed_ip=ip)
+
+    try:
+        success = run_with_spinner(_set_ip(), "Setting fixed IP...")
+    except Exception as e:
+        handle_error(e)
+        return
+
+    if not success:
+        if output == OutputFormat.JSON:
+            output_json({"success": False, "name": name, "mac": mac, "fixed_ip": ip, "error": "API call failed"})
+        else:
+            console.print(f"[red]Failed to set fixed IP for:[/red] {display}")
+        raise typer.Exit(1)
+
+    if output != OutputFormat.JSON:
+        console.print(f"[green]Set fixed IP:[/green] {display} -> {ip}")
+
+    # Kick client to force DHCP renewal (unless --no-kick)
+    kicked = False
+    if not no_kick:
+        async def _kick():
+            return await api_client.kick_client(mac)
+
+        try:
+            kicked = run_with_spinner(_kick(), "Kicking client for DHCP renewal...")
+            if output != OutputFormat.JSON:
+                if kicked:
+                    console.print(f"[green]Kicked client:[/green] {display} (will reconnect with new IP)")
+                else:
+                    console.print(f"[yellow]Could not kick client[/yellow] - may need manual reconnect")
+        except Exception:
+            if output != OutputFormat.JSON:
+                console.print(f"[yellow]Could not kick client[/yellow] - may need manual reconnect")
+
+    if output == OutputFormat.JSON:
+        output_json({"success": True, "name": name, "mac": mac, "fixed_ip": ip, "kicked": kicked})
 
 
 def format_bytes(bytes_val: int) -> str:

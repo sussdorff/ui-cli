@@ -562,6 +562,38 @@ class UniFiLocalClient:
         users = response.get("data", [])
         return [u for u in users if u.get("use_fixedip", False)]
 
+    async def set_client_fixed_ip(
+        self,
+        client_id: str,
+        fixed_ip: str | None = None,
+        network_id: str | None = None,
+        *,
+        use_fixedip: bool = True,
+    ) -> bool:
+        """Set or remove a fixed IP for a client.
+
+        Args:
+            client_id: The _id of the client (user record)
+            fixed_ip: The IP address to assign (required if use_fixedip=True)
+            network_id: The network _id (optional, uses client's current network)
+            use_fixedip: True to enable fixed IP, False to disable
+
+        Returns:
+            True on success
+        """
+        payload: dict[str, Any] = {
+            "_id": client_id,
+            "use_fixedip": use_fixedip,
+        }
+        if use_fixedip:
+            if fixed_ip:
+                payload["fixed_ip"] = fixed_ip
+            if network_id:
+                payload["network_id"] = network_id
+
+        response = await self._request("PUT", f"/rest/user/{client_id}", data=payload)
+        return response.get("meta", {}).get("rc") == "ok"
+
     async def get_traffic_rules(self) -> list[dict[str, Any]]:
         """Get traffic rules/schedules."""
         response = await self.get("/rest/trafficrule")
