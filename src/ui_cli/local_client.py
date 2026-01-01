@@ -379,6 +379,23 @@ class UniFiLocalClient:
         response = await self.post("/cmd/stamgr", data={"cmd": "kick-sta", "mac": mac})
         return response.get("meta", {}).get("rc") == "ok"
 
+    async def set_client_name(self, user_id: str, name: str) -> bool:
+        """Set the display name for a client.
+
+        Args:
+            user_id: The _id of the client/user record (not MAC address)
+            name: The name to set for the client
+
+        Returns:
+            True on success
+        """
+        response = await self._request(
+            "PUT",
+            f"/rest/user/{user_id}",
+            data={"_id": user_id, "name": name},
+        )
+        return response.get("meta", {}).get("rc") == "ok"
+
     # ========== Configuration ==========
 
     async def get_networks(self) -> list[dict[str, Any]]:

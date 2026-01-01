@@ -1333,6 +1333,110 @@ def count_clients(
         output_count_table(counts, group_header=group_header, title=title)
 
 
+@app.command("rename")
+def rename_client(
+    identifier: Annotated[
+        str,
+        typer.Argument(help="Client MAC address or current name"),
+    ],
+    new_name: Annotated[
+        str,
+        typer.Argument(help="New name for the client"),
+    ],
+    yes: Annotated[
+        bool,
+        typer.Option("--yes", "-y", help="Skip confirmation prompt"),
+    ] = False,
+    output: Annotated[
+        OutputFormat,
+        typer.Option("--output", "-o", help="Output format"),
+    ] = OutputFormat.TABLE,
+) -> None:
+    """Rename a client (set display name).
+
+    Sets a custom name for a client that will be shown in the UniFi
+    controller instead of the hostname or MAC address.
+
+    Examples:
+        ui lo clients rename 7A:3E:07:23:13:75 "AEG Dampfgarer"
+        ui lo clients rename "old-name" "new-name" -y
+    """
+    async def _resolve_and_get_id():
+        api_client = UniFiLocalClient()
+        mac, current_name = await resolve_client_identifier(api_client, identifier)
+        if not mac:
+            return None, None, None, api_client
+
+        # Get user record to find the _id
+        response = await api_client.get("/rest/user")
+        users = response.get("data", [])
+        user_id = None
+        for user in users:
+            if user.get("mac", "").lower() == mac.lower():
+                user_id = user.get("_id")
+                break
+
+        return mac, current_name, user_id, api_client
+
+    try:
+        mac, current_name, user_id, api_client = run_with_spinner(
+            _resolve_and_get_id(), "Finding client..."
+        )
+    except Exception as e:
+        handle_error(e)
+        return
+
+    if not mac:
+        console.print(f"[yellow]Client not found:[/yellow] {identifier}")
+        raise typer.Exit(1)
+
+    if not user_id:
+        console.print(f"[red]Error:[/red] Could not find user record for {identifier}")
+        console.print("[dim]The client may not have connected recently enough to have a user record.[/dim]")
+        raise typer.Exit(1)
+
+    display = f"{current_name} ({mac.upper()})" if current_name else mac.upper()
+
+    # Confirm action
+    if not yes:
+        if not typer.confirm(f"Rename {display} to \"{new_name}\"?"):
+            console.print("[dim]Cancelled[/dim]")
+            raise typer.Exit(0)
+
+    # Execute action
+    async def _rename():
+        return await api_client.set_client_name(user_id, new_name)
+
+    try:
+        success = run_with_spinner(_rename(), "Renaming client...")
+    except Exception as e:
+        handle_error(e)
+        return
+
+    if success:
+        if output == OutputFormat.JSON:
+            output_json({
+                "success": True,
+                "mac": mac,
+                "old_name": current_name,
+                "new_name": new_name,
+            })
+        else:
+            console.print(f"[green]Renamed:[/green] {mac.upper()} -> \"{new_name}\"")
+    else:
+        if output == OutputFormat.JSON:
+            output_json({
+                "success": False,
+                "mac": mac,
+                "old_name": current_name,
+                "new_name": new_name,
+                "error": "API call failed",
+            })
+        else:
+            console.print(f"[red]Failed to rename client:[/red] {display}")
+        raise typer.Exit(1)
+
+
 @app.command("duplicates")
 def find_duplicates(
     output: Annotated[
