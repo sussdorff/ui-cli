@@ -143,6 +143,7 @@ def get_network(
     ] = OutputFormat.TABLE,
 ) -> None:
     """Get network details."""
+    from ui_cli.commands.local.utils import run_with_spinner
 
     async def _get():
         client = UniFiLocalClient()
@@ -248,3 +249,107 @@ def get_network(
 
     console.print(table)
     console.print()
+
+
+@app.command("update")
+def update_network(
+    network_id: Annotated[str, typer.Argument(help="Network ID or name")],
+    dhcp_start: Annotated[
+        str | None,
+        typer.Option("--dhcp-start", help="DHCP range start (last octet or full IP)"),
+    ] = None,
+    dhcp_stop: Annotated[
+        str | None,
+        typer.Option("--dhcp-stop", help="DHCP range stop (last octet or full IP)"),
+    ] = None,
+    output: Annotated[
+        OutputFormat,
+        typer.Option("--output", "-o", help="Output format"),
+    ] = OutputFormat.TABLE,
+) -> None:
+    """Update network settings (e.g., DHCP range)."""
+    from ui_cli.commands.local.utils import run_with_spinner
+    from ui_cli.output import print_success
+
+    if dhcp_start is None and dhcp_stop is None:
+        print_error("At least one option required (e.g., --dhcp-start, --dhcp-stop)")
+        raise typer.Exit(1)
+
+    async def _update():
+        client = UniFiLocalClient()
+        networks = await client.get_networks()
+
+        # Find network by ID or name
+        network = None
+        for n in networks:
+            if n.get("_id") == network_id or n.get("name", "").lower() == network_id.lower():
+                network = n
+                break
+
+        # Partial name match as fallback
+        if not network:
+            for n in networks:
+                if network_id.lower() in n.get("name", "").lower():
+                    network = n
+                    break
+
+        if not network:
+            return None, f"Network '{network_id}' not found"
+
+        net_id = network["_id"]
+        subnet = network.get("ip_subnet", "")
+
+        # Build payload with required fields
+        payload: dict[str, Any] = {"_id": net_id}
+
+        # Handle DHCP range updates
+        if dhcp_start is not None or dhcp_stop is not None:
+            if not network.get("dhcpd_enabled"):
+                return None, f"Network '{network.get('name')}' has DHCP disabled"
+
+            # Get subnet prefix for IP construction
+            if not subnet:
+                return None, "Network has no subnet configured"
+            prefix = ".".join(subnet.split("/")[0].split(".")[:3])
+
+            # Convert last octet to full IP if needed
+            if dhcp_start is not None:
+                if "." not in dhcp_start:
+                    payload["dhcpd_start"] = f"{prefix}.{dhcp_start}"
+                else:
+                    payload["dhcpd_start"] = dhcp_start
+
+            if dhcp_stop is not None:
+                if "." not in dhcp_stop:
+                    payload["dhcpd_stop"] = f"{prefix}.{dhcp_stop}"
+                else:
+                    payload["dhcpd_stop"] = dhcp_stop
+
+        updated = await client.update_network(net_id, payload)
+        return updated, None
+
+    try:
+        result, error = run_with_spinner(_update(), "Updating network...")
+    except LocalAPIError as e:
+        print_error(str(e))
+        raise typer.Exit(1)
+
+    if error:
+        print_error(error)
+        raise typer.Exit(1)
+
+    if not result:
+        print_error("Update failed - no response from controller")
+        raise typer.Exit(1)
+
+    if output == OutputFormat.JSON:
+        output_json(result)
+        return
+
+    # Show success message with new values
+    name = result.get("name", "Unknown")
+    dhcp_new_start = result.get("dhcpd_start", "")
+    dhcp_new_stop = result.get("dhcpd_stop", "")
+    print_success(f"Updated network '{name}'")
+    if dhcp_new_start or dhcp_new_stop:
+        console.print(f"  DHCP Range: {dhcp_new_start} - {dhcp_new_stop}")

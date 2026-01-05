@@ -408,6 +408,22 @@ class UniFiLocalClient:
         response = await self.get("/rest/wlanconf")
         return response.get("data", [])
 
+    async def update_network(
+        self, network_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Update network settings.
+
+        Args:
+            network_id: The _id of the network to update
+            payload: Configuration to apply (merged with existing config)
+
+        Returns:
+            Updated network configuration
+        """
+        response = await self._request("PUT", f"/rest/networkconf/{network_id}", data=payload)
+        data = response.get("data", [])
+        return data[0] if data else {}
+
     # ========== AP Groups (Broadcasting Groups) ==========
 
     async def _ensure_authenticated(self) -> None:
