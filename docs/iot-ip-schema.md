@@ -47,7 +47,7 @@
 | IP | Gerät | MAC | Status |
 |----|-------|-----|--------|
 | .40 | X-Sense Base Station EG | 78:1C:3C:23:16:B0 | ✓ Fixed |
-| .41 | (reserviert für Base Station 2) | - | - |
+| .41 | X-Sense Base Station AirBnB | 68:FE:71:34:C1:1C | ✓ Fixed |
 | .42 | (reserviert für Base Station 3) | - | - |
 | .43 | (reserviert) | - | - |
 | .44 | (reserviert) | - | - |
