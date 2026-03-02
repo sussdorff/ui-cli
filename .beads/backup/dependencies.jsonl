@@ -1,0 +1,5 @@
+{"created_at":"2026-01-05T09:50:31Z","created_by":"Malte Sussdorff","depends_on_id":"ui-cli-x1h","issue_id":"ui-cli-x1h.1","type":"parent-child"}
+{"created_at":"2026-01-05T09:50:56Z","created_by":"Malte Sussdorff","depends_on_id":"ui-cli-x1h","issue_id":"ui-cli-x1h.2","type":"parent-child"}
+{"created_at":"2026-01-05T09:50:56Z","created_by":"Malte Sussdorff","depends_on_id":"ui-cli-x1h.1","issue_id":"ui-cli-x1h.2","type":"blocks"}
+{"created_at":"2026-01-05T09:51:16Z","created_by":"Malte Sussdorff","depends_on_id":"ui-cli-x1h","issue_id":"ui-cli-x1h.3","type":"parent-child"}
+{"created_at":"2026-01-05T09:51:16Z","created_by":"Malte Sussdorff","depends_on_id":"ui-cli-x1h.2","issue_id":"ui-cli-x1h.3","type":"blocks"}
