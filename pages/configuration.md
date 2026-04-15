@@ -42,9 +42,13 @@ For commands that connect directly to your UniFi Controller.
 # Required: Controller URL
 UNIFI_CONTROLLER_URL=https://192.168.1.1
 
-# Required: Credentials
-UNIFI_CONTROLLER_USERNAME=admin
-UNIFI_CONTROLLER_PASSWORD=yourpassword
+# Required: Authentication (choose one method)
+# Method 1: API Key (recommended for UDM/UniFi OS 5.0.3+)
+UNIFI_CONTROLLER_API_KEY=your-api-key-here
+
+# Method 2: Username/Password (legacy, works on all controllers)
+# UNIFI_CONTROLLER_USERNAME=admin
+# UNIFI_CONTROLLER_PASSWORD=yourpassword
 
 # Optional: Site name (default: "default")
 UNIFI_CONTROLLER_SITE=default
@@ -52,6 +56,40 @@ UNIFI_CONTROLLER_SITE=default
 # Optional: SSL verification (default: false)
 UNIFI_CONTROLLER_VERIFY_SSL=false
 ```
+
+### Authentication Methods
+
+UI-CLI supports two authentication methods for local controllers:
+
+#### API Key Authentication (Recommended)
+
+Available on **UDM, UDM Pro, UDM SE with UniFi OS 5.0.3+**.
+
+```bash
+UNIFI_CONTROLLER_API_KEY=your-api-key-here
+```
+
+To create an API key:
+1. Log in to UniFi OS Dashboard
+2. Go to **Settings** → **Admins**
+3. Click **Create API Key**
+4. Copy the key immediately (it's only shown once!)
+
+**Benefits:**
+- More secure (narrower scope than full admin credentials)
+- No session management overhead
+- Better suited for automated/CI tools
+
+#### Username/Password Authentication (Legacy)
+
+Works on all controller types (UDM, Cloud Key, self-hosted).
+
+```bash
+UNIFI_CONTROLLER_USERNAME=admin
+UNIFI_CONTROLLER_PASSWORD=yourpassword
+```
+
+The client automatically detects your controller type and uses the appropriate authentication endpoint.
 
 ### Controller Types
 
@@ -71,6 +109,8 @@ Most UniFi controllers use self-signed certificates. Set `UNIFI_CONTROLLER_VERIF
 
 ## Full Example
 
+### Using API Key Authentication (Recommended)
+
 ```bash
 # ===========================================
 # Cloud API (api.ui.com)
@@ -80,7 +120,26 @@ UNIFI_API_URL=https://api.ui.com/v1
 UNIFI_TIMEOUT=30
 
 # ===========================================
-# Local Controller
+# Local Controller (API Key)
+# ===========================================
+UNIFI_CONTROLLER_URL=https://192.168.1.1
+UNIFI_CONTROLLER_API_KEY=your-api-key-here
+UNIFI_CONTROLLER_SITE=default
+UNIFI_CONTROLLER_VERIFY_SSL=false
+```
+
+### Using Username/Password Authentication (Legacy)
+
+```bash
+# ===========================================
+# Cloud API (api.ui.com)
+# ===========================================
+UNIFI_API_KEY=your-api-key-here
+UNIFI_API_URL=https://api.ui.com/v1
+UNIFI_TIMEOUT=30
+
+# ===========================================
+# Local Controller (Username/Password)
 # ===========================================
 UNIFI_CONTROLLER_URL=https://192.168.1.1
 UNIFI_CONTROLLER_USERNAME=admin
