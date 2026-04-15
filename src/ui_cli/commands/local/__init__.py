@@ -44,7 +44,7 @@ def local_callback(
 
 
 # Import subcommands after app is defined to avoid circular imports
-from ui_cli.commands.local import apgroups, clients, config, devices, dpi, events, firewall, health, networks, portfwd, stats, vouchers, wlans
+from ui_cli.commands.local import apgroups, clients, config, devices, dpi, events, firewall, health, networks, portfwd, stats, vouchers, wan, wlans
 
 # Register subcommands
 app.add_typer(apgroups.app, name="apgroups")
@@ -59,4 +59,5 @@ app.add_typer(networks.app, name="networks")
 app.add_typer(portfwd.app, name="portfwd")
 app.add_typer(stats.app, name="stats")
 app.add_typer(vouchers.app, name="vouchers")
+app.add_typer(wan.app, name="wan")
 app.add_typer(wlans.app, name="wlans")

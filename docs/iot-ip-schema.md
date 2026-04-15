@@ -10,6 +10,7 @@
 | **10-19** | Energiemanagement (Core) | 10 |
 | **20-39** | Shelly Energiemesser | 20 |
 | **40-44** | X-Sense (Sicherheit) | 5 |
+| **45-49** | Bridges/Hubs | 5 |
 | **50-59** | Klimaanlagen | 10 |
 | **60-69** | Meross Steckdosen | 10 |
 | **70-79** | Beleuchtung (Meross Ambient Lights) | 10 |
@@ -31,6 +32,7 @@
 | .11 | Enphase Envoy | 00:1D:C0:81:F1:0D | ✓ Fixed |
 | .12 | Hoymiles Balkon DTU | 54:F2:9F:8F:90:19 | → Migration |
 | .13 | Tibber Pulse | 58:BF:25:E5:61:E4 | → Migration |
+| .14 | Nibe Wärmepumpe (Kabel) | 58:A1:5F:7B:20:23 | ✓ Fixed |
 
 ### 20-39: Shelly Energiemesser
 
@@ -51,6 +53,16 @@
 | .42 | (reserviert für Base Station 3) | - | - |
 | .43 | (reserviert) | - | - |
 | .44 | (reserviert) | - | - |
+
+### 45-49: Bridges/Hubs
+
+| IP | Gerät | MAC | Status |
+|----|-------|-----|--------|
+| .45 | Philips Hue Bridge | EC:B5:FA:22:7B:2A | ✓ Fixed |
+| .46 | Eufy HomeBase 2 | 8C:85:80:41:76:24 | ✓ Fixed |
+| .47 | (reserviert) | - | - |
+| .48 | (reserviert) | - | - |
+| .49 | (reserviert) | - | - |
 
 ### 50-59: Klimaanlagen
 
@@ -96,6 +108,7 @@
 | .90 | AEG Waschmaschine | 44:3E:07:4F:B1:46 | → set-ip (von .161) |
 | .91 | AEG Dampfgarer | 44:3E:07:23:13:75 | → set-ip (von .174) |
 | .92 | Smart Scale P3 | C8:C9:A3:1A:87:55 | → Migration |
+| .93 | Decent Tablet | 00:28:30:12:7B:F0 | ✓ Fixed |
 
 ### 100-109: Garten
 

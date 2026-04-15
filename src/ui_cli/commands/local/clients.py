@@ -82,11 +82,15 @@ def format_client(client: dict, verbose: bool = False) -> dict:
     tx_rate_str = f"{tx_rate / 1000:.0f} Mbps" if tx_rate else ""
     rx_rate_str = f"{rx_rate / 1000:.0f} Mbps" if rx_rate else ""
 
+    # Fixed IP info
+    use_fixedip = client.get("use_fixedip", False)
+    fixed_ip = client.get("fixed_ip", "")
+
     result = {
         "name": client.get("name") or client.get("hostname") or "(unknown)",
         "mac": client.get("mac", "").upper(),
-        "ip": client.get("ip", ""),
-        "network": network,
+        "ip": client.get("ip", "") or client.get("last_ip", ""),
+        "network": network or client.get("last_connection_network_name", ""),
         "type": conn_type,
         "oui": client.get("oui", ""),
         "signal": signal,
@@ -94,6 +98,8 @@ def format_client(client: dict, verbose: bool = False) -> dict:
         "tx_rate": tx_rate_str,
         "rx_rate": rx_rate_str,
         "uptime": uptime,
+        "fixed_ip": fixed_ip if use_fixedip else "",
+        "use_fixedip": use_fixedip,
     }
 
     return result

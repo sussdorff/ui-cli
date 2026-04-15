@@ -424,6 +424,51 @@ class UniFiLocalClient:
         data = response.get("data", [])
         return data[0] if data else {}
 
+    async def update_network_dns(
+        self,
+        network_id: str,
+        dns1: str | None = None,
+        dns2: str | None = None,
+        dns3: str | None = None,
+        dns4: str | None = None,
+        enabled: bool = True,
+    ) -> dict[str, Any]:
+        """Update DHCP DNS server configuration for a network.
+
+        When ``enabled`` is False, custom DNS is disabled and all
+        ``dhcpd_dns_{1..4}`` slots are cleared regardless of the dns*
+        arguments (controller falls back to auto / gateway DNS).
+
+        Args:
+            network_id: The _id of the network to update.
+            dns1: Primary DNS server IP (dhcpd_dns_1).
+            dns2: Secondary DNS server IP (dhcpd_dns_2).
+            dns3: Tertiary DNS server IP (dhcpd_dns_3).
+            dns4: Quaternary DNS server IP (dhcpd_dns_4).
+            enabled: Whether custom DHCP DNS is enabled.
+
+        Returns:
+            Updated network configuration.
+        """
+        payload: dict[str, Any] = {"_id": network_id, "dhcpd_dns_enabled": enabled}
+        if not enabled:
+            payload.update({
+                "dhcpd_dns_1": "",
+                "dhcpd_dns_2": "",
+                "dhcpd_dns_3": "",
+                "dhcpd_dns_4": "",
+            })
+        else:
+            if dns1 is not None:
+                payload["dhcpd_dns_1"] = dns1
+            if dns2 is not None:
+                payload["dhcpd_dns_2"] = dns2
+            if dns3 is not None:
+                payload["dhcpd_dns_3"] = dns3
+            if dns4 is not None:
+                payload["dhcpd_dns_4"] = dns4
+        return await self.update_network(network_id, payload)
+
     # ========== AP Groups (Broadcasting Groups) ==========
 
     async def _ensure_authenticated(self) -> None:

@@ -217,14 +217,18 @@ def get_network(
         lease = network.get("dhcpd_leasetime", 86400)
         table.add_row("Lease:", f"{lease // 3600}h")
 
-        # DNS
-        dns1 = network.get("dhcpd_dns1", "")
-        dns2 = network.get("dhcpd_dns2", "")
-        if dns1:
-            dns_str = dns1
-            if dns2:
-                dns_str += f", {dns2}"
-            table.add_row("DNS:", dns_str)
+        # DNS (dhcpd_dns_{1..4}, gated by dhcpd_dns_enabled)
+        if network.get("dhcpd_dns_enabled"):
+            dns_parts = [
+                network.get(f"dhcpd_dns_{i}", "") for i in (1, 2, 3, 4)
+            ]
+            dns_parts = [d for d in dns_parts if d]
+            if dns_parts:
+                table.add_row("DNS:", ", ".join(dns_parts))
+            else:
+                table.add_row("DNS:", "[dim]custom enabled, no servers set[/dim]")
+        else:
+            table.add_row("DNS:", "[dim]auto (gateway)[/dim]")
     else:
         table.add_row("DHCP:", "[dim]Disabled[/dim]")
 
@@ -253,7 +257,10 @@ def get_network(
 
 @app.command("update")
 def update_network(
-    network_id: Annotated[str, typer.Argument(help="Network ID or name")],
+    network_ids: Annotated[
+        list[str],
+        typer.Argument(help="Network ID(s) or name(s) — pass multiple to update in one call"),
+    ],
     dhcp_start: Annotated[
         str | None,
         typer.Option("--dhcp-start", help="DHCP range start (last octet or full IP)"),
@@ -262,94 +269,158 @@ def update_network(
         str | None,
         typer.Option("--dhcp-stop", help="DHCP range stop (last octet or full IP)"),
     ] = None,
+    dns1: Annotated[
+        str | None,
+        typer.Option("--dns1", help="Primary DHCP DNS server (dhcpd_dns_1)"),
+    ] = None,
+    dns2: Annotated[
+        str | None,
+        typer.Option("--dns2", help="Secondary DHCP DNS server (dhcpd_dns_2)"),
+    ] = None,
+    dns3: Annotated[
+        str | None,
+        typer.Option("--dns3", help="Tertiary DHCP DNS server (dhcpd_dns_3)"),
+    ] = None,
+    dns4: Annotated[
+        str | None,
+        typer.Option("--dns4", help="Quaternary DHCP DNS server (dhcpd_dns_4)"),
+    ] = None,
+    no_dns: Annotated[
+        bool,
+        typer.Option("--no-dns", help="Disable custom DHCP DNS (fall back to auto/gateway)"),
+    ] = False,
     output: Annotated[
         OutputFormat,
         typer.Option("--output", "-o", help="Output format"),
     ] = OutputFormat.TABLE,
 ) -> None:
-    """Update network settings (e.g., DHCP range)."""
+    """Update network settings (DHCP range, DHCP DNS servers)."""
     from ui_cli.commands.local.utils import run_with_spinner
     from ui_cli.output import print_success
 
-    if dhcp_start is None and dhcp_stop is None:
-        print_error("At least one option required (e.g., --dhcp-start, --dhcp-stop)")
+    dns_requested = any(v is not None for v in (dns1, dns2, dns3, dns4)) or no_dns
+    dhcp_requested = dhcp_start is not None or dhcp_stop is not None
+
+    if not dhcp_requested and not dns_requested:
+        print_error(
+            "At least one option required (--dhcp-start, --dhcp-stop, --dns1..--dns4, --no-dns)"
+        )
         raise typer.Exit(1)
 
-    async def _update():
-        client = UniFiLocalClient()
-        networks = await client.get_networks()
+    if no_dns and any(v is not None for v in (dns1, dns2, dns3, dns4)):
+        print_error("--no-dns cannot be combined with --dns1/--dns2/--dns3/--dns4")
+        raise typer.Exit(1)
 
-        # Find network by ID or name
-        network = None
+    def _resolve(networks: list[dict[str, Any]], needle: str) -> dict[str, Any] | None:
         for n in networks:
-            if n.get("_id") == network_id or n.get("name", "").lower() == network_id.lower():
-                network = n
-                break
+            if n.get("_id") == needle or n.get("name", "").lower() == needle.lower():
+                return n
+        for n in networks:
+            if needle.lower() in n.get("name", "").lower():
+                return n
+        return None
 
-        # Partial name match as fallback
+    async def _update_one(
+        client: UniFiLocalClient,
+        networks: list[dict[str, Any]],
+        needle: str,
+    ) -> tuple[dict[str, Any] | None, str | None]:
+        network = _resolve(networks, needle)
         if not network:
-            for n in networks:
-                if network_id.lower() in n.get("name", "").lower():
-                    network = n
-                    break
-
-        if not network:
-            return None, f"Network '{network_id}' not found"
+            return None, f"Network '{needle}' not found"
 
         net_id = network["_id"]
         subnet = network.get("ip_subnet", "")
-
-        # Build payload with required fields
         payload: dict[str, Any] = {"_id": net_id}
 
-        # Handle DHCP range updates
-        if dhcp_start is not None or dhcp_stop is not None:
+        if dhcp_requested:
             if not network.get("dhcpd_enabled"):
                 return None, f"Network '{network.get('name')}' has DHCP disabled"
-
-            # Get subnet prefix for IP construction
             if not subnet:
-                return None, "Network has no subnet configured"
+                return None, f"Network '{network.get('name')}' has no subnet configured"
             prefix = ".".join(subnet.split("/")[0].split(".")[:3])
 
-            # Convert last octet to full IP if needed
             if dhcp_start is not None:
-                if "." not in dhcp_start:
-                    payload["dhcpd_start"] = f"{prefix}.{dhcp_start}"
-                else:
-                    payload["dhcpd_start"] = dhcp_start
-
+                payload["dhcpd_start"] = (
+                    f"{prefix}.{dhcp_start}" if "." not in dhcp_start else dhcp_start
+                )
             if dhcp_stop is not None:
-                if "." not in dhcp_stop:
-                    payload["dhcpd_stop"] = f"{prefix}.{dhcp_stop}"
-                else:
-                    payload["dhcpd_stop"] = dhcp_stop
+                payload["dhcpd_stop"] = (
+                    f"{prefix}.{dhcp_stop}" if "." not in dhcp_stop else dhcp_stop
+                )
+
+        if dns_requested:
+            if no_dns:
+                payload["dhcpd_dns_enabled"] = False
+                payload.update({
+                    "dhcpd_dns_1": "",
+                    "dhcpd_dns_2": "",
+                    "dhcpd_dns_3": "",
+                    "dhcpd_dns_4": "",
+                })
+            else:
+                payload["dhcpd_dns_enabled"] = True
+                if dns1 is not None:
+                    payload["dhcpd_dns_1"] = dns1
+                if dns2 is not None:
+                    payload["dhcpd_dns_2"] = dns2
+                if dns3 is not None:
+                    payload["dhcpd_dns_3"] = dns3
+                if dns4 is not None:
+                    payload["dhcpd_dns_4"] = dns4
 
         updated = await client.update_network(net_id, payload)
         return updated, None
 
+    async def _update_all():
+        client = UniFiLocalClient()
+        networks = await client.get_networks()
+        results: list[tuple[str, dict[str, Any] | None, str | None]] = []
+        for needle in network_ids:
+            result, err = await _update_one(client, networks, needle)
+            results.append((needle, result, err))
+        return results
+
     try:
-        result, error = run_with_spinner(_update(), "Updating network...")
+        results = run_with_spinner(_update_all(), "Updating networks...")
     except LocalAPIError as e:
         print_error(str(e))
         raise typer.Exit(1)
 
-    if error:
-        print_error(error)
-        raise typer.Exit(1)
-
-    if not result:
-        print_error("Update failed - no response from controller")
-        raise typer.Exit(1)
-
     if output == OutputFormat.JSON:
-        output_json(result)
-        return
+        output_json([
+            {"network": needle, "error": err, "result": result}
+            for needle, result, err in results
+        ])
+        exit_code = 1 if any(err for _, _, err in results) else 0
+        raise typer.Exit(exit_code)
 
-    # Show success message with new values
-    name = result.get("name", "Unknown")
-    dhcp_new_start = result.get("dhcpd_start", "")
-    dhcp_new_stop = result.get("dhcpd_stop", "")
-    print_success(f"Updated network '{name}'")
-    if dhcp_new_start or dhcp_new_stop:
-        console.print(f"  DHCP Range: {dhcp_new_start} - {dhcp_new_stop}")
+    exit_code = 0
+    for needle, result, err in results:
+        if err:
+            print_error(f"[{needle}] {err}")
+            exit_code = 1
+            continue
+        if not result:
+            print_error(f"[{needle}] Update failed - no response from controller")
+            exit_code = 1
+            continue
+
+        name = result.get("name", needle)
+        print_success(f"Updated network '{name}'")
+        if dhcp_requested:
+            console.print(
+                f"  DHCP Range: {result.get('dhcpd_start', '')} - {result.get('dhcpd_stop', '')}"
+            )
+        if dns_requested:
+            if result.get("dhcpd_dns_enabled"):
+                dns_parts = [
+                    result.get(f"dhcpd_dns_{i}", "") for i in (1, 2, 3, 4)
+                ]
+                dns_parts = [d for d in dns_parts if d]
+                console.print(f"  DNS: {', '.join(dns_parts) if dns_parts else '(enabled, empty)'}")
+            else:
+                console.print("  DNS: auto (custom disabled)")
+
+    if exit_code:
+        raise typer.Exit(exit_code)
