@@ -347,15 +347,23 @@ class UniFiLocalClient:
                         )
                     raise SessionExpiredError("Session expired and re-login failed")
 
-                # API key mode: 404/405 means the proxy path isn't supported by this
-                # controller type (e.g. legacy Cloud Key without UniFi OS).
+                # API key mode: 404/405 may indicate controller doesn't support proxy path
                 if self._api_key and response.status_code in (404, 405):
-                    raise LocalAuthenticationError(
-                        f"API key authentication requires UniFi OS (UDM/UDM-Pro/Cloud Gateway, "
-                        f"firmware \u2265 5.0.3). This controller returned HTTP {response.status_code}, "
-                        f"suggesting it does not support API keys. "
-                        f"Use UNIFI_CONTROLLER_USERNAME/UNIFI_CONTROLLER_PASSWORD for this controller type."
-                    )
+                    if self.username and self.password:
+                        # Fall back to legacy auth path
+                        self._api_key = ""          # disable API key mode
+                        self._is_udm = None         # reset UDM detection
+                        self._clear_session()
+                        await self.login()          # re-authenticate via username/password
+                        # Retry the request on the legacy path (retry_auth=False to prevent loops)
+                        return await self._request(method, endpoint, data, retry_auth=False)
+                    else:
+                        raise LocalAuthenticationError(
+                            f"API key authentication requires UniFi OS (UDM/UDM-Pro/Cloud Gateway, "
+                            f"firmware >= 5.0.3). This controller returned HTTP {response.status_code}, "
+                            f"suggesting it does not support API keys. "
+                            f"Use UNIFI_CONTROLLER_USERNAME/UNIFI_CONTROLLER_PASSWORD for this controller type."
+                        )
 
                 if response.status_code >= 400:
                     raise LocalAPIError(
@@ -569,15 +577,6 @@ class UniFiLocalClient:
                 if self._api_key:
                     raise LocalAuthenticationError(_API_KEY_REJECTED_MSG)
                 raise LocalAuthenticationError("Session expired")
-            # API key mode: 404/405 means the v2 proxy path isn't supported by this
-            # controller type (e.g. legacy Cloud Key without UniFi OS).
-            if self._api_key and response.status_code in (404, 405):
-                raise LocalAuthenticationError(
-                    f"API key authentication requires UniFi OS (UDM/UDM-Pro/Cloud Gateway, "
-                    f"firmware \u2265 5.0.3). This controller returned HTTP {response.status_code}, "
-                    f"suggesting it does not support API keys. "
-                    f"Use UNIFI_CONTROLLER_USERNAME/UNIFI_CONTROLLER_PASSWORD for this controller type."
-                )
             if not response.is_success:
                 raise LocalAPIError(
                     f"API error: {response.text}", status_code=response.status_code
