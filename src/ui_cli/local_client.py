@@ -347,6 +347,16 @@ class UniFiLocalClient:
                         )
                     raise SessionExpiredError("Session expired and re-login failed")
 
+                # API key mode: 404/405 means the proxy path isn't supported by this
+                # controller type (e.g. legacy Cloud Key without UniFi OS).
+                if self._api_key and response.status_code in (404, 405):
+                    raise LocalAuthenticationError(
+                        f"API key authentication requires UniFi OS (UDM/UDM-Pro/Cloud Gateway, "
+                        f"firmware \u2265 5.0.3). This controller returned HTTP {response.status_code}, "
+                        f"suggesting it does not support API keys. "
+                        f"Use UNIFI_CONTROLLER_USERNAME/UNIFI_CONTROLLER_PASSWORD for this controller type."
+                    )
+
                 if response.status_code >= 400:
                     raise LocalAPIError(
                         f"API error: {response.text}",
@@ -559,6 +569,15 @@ class UniFiLocalClient:
                 if self._api_key:
                     raise LocalAuthenticationError(_API_KEY_REJECTED_MSG)
                 raise LocalAuthenticationError("Session expired")
+            # API key mode: 404/405 means the v2 proxy path isn't supported by this
+            # controller type (e.g. legacy Cloud Key without UniFi OS).
+            if self._api_key and response.status_code in (404, 405):
+                raise LocalAuthenticationError(
+                    f"API key authentication requires UniFi OS (UDM/UDM-Pro/Cloud Gateway, "
+                    f"firmware \u2265 5.0.3). This controller returned HTTP {response.status_code}, "
+                    f"suggesting it does not support API keys. "
+                    f"Use UNIFI_CONTROLLER_USERNAME/UNIFI_CONTROLLER_PASSWORD for this controller type."
+                )
             if not response.is_success:
                 raise LocalAPIError(
                     f"API error: {response.text}", status_code=response.status_code

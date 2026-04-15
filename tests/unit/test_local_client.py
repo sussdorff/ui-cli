@@ -588,6 +588,56 @@ class TestUniFiLocalClientApiKeyAuth:
             with pytest.raises(LocalAuthenticationError, match="API key rejected"):
                 await client.get_ap_groups()
 
+    # ---- AK1 (legacy controller): 404/405 → clear error explaining proxy path not supported ----
+
+    @pytest.mark.asyncio
+    async def test_ak1_legacy_controller_raises_clear_error(self, mock_settings_with_api_key):
+        """AK1: 404 from _request() in API key mode raises LocalAuthenticationError
+        explaining the controller does not support API keys (not a generic 404)."""
+        client = UniFiLocalClient()
+
+        for status_code in (404, 405):
+            mock_response = MagicMock()
+            mock_response.status_code = status_code
+            mock_response.text = "Not Found"
+
+            with patch("ui_cli.local_client.httpx.AsyncClient") as mock_client_cls:
+                mock_async_client = AsyncMock()
+                mock_async_client.__aenter__ = AsyncMock(return_value=mock_async_client)
+                mock_async_client.__aexit__ = AsyncMock(return_value=None)
+                mock_async_client.request = AsyncMock(return_value=mock_response)
+                mock_client_cls.return_value = mock_async_client
+
+                with pytest.raises(
+                    LocalAuthenticationError,
+                    match="requires UniFi OS|does not support API keys",
+                ):
+                    await client.get("/stat/health")
+
+    @pytest.mark.asyncio
+    async def test_ak1_legacy_controller_v2_raises_clear_error(self, mock_settings_with_api_key):
+        """AK1: 404 from _v2_request() in API key mode raises LocalAuthenticationError
+        explaining the controller does not support API keys."""
+        client = UniFiLocalClient()
+
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_response.text = "Not Found"
+        mock_response.is_success = False
+
+        with patch("ui_cli.local_client.httpx.AsyncClient") as mock_client_cls:
+            mock_async_client = AsyncMock()
+            mock_async_client.__aenter__ = AsyncMock(return_value=mock_async_client)
+            mock_async_client.__aexit__ = AsyncMock(return_value=None)
+            mock_async_client.get = AsyncMock(return_value=mock_response)
+            mock_client_cls.return_value = mock_async_client
+
+            with pytest.raises(
+                LocalAuthenticationError,
+                match="requires UniFi OS|does not support API keys",
+            ):
+                await client.get_ap_groups()
+
     # ---- AK4: Settings field controller_api_key ----
 
     def test_ak4_settings_has_controller_api_key_field(self, monkeypatch):
