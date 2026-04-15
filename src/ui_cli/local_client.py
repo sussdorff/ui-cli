@@ -85,6 +85,10 @@ class UniFiLocalClient:
         self._csrf_token: str | None = None
         self._is_udm: bool | None = None  # None = not detected yet
 
+        # API key auth only works on UniFi OS controllers; initialize UDM mode
+        if self._api_key:
+            self._is_udm = True
+
         if not self.controller_url:
             raise LocalAuthenticationError(
                 "Controller URL not configured. Set UNIFI_CONTROLLER_URL in .env file."
@@ -326,7 +330,7 @@ class UniFiLocalClient:
                     json=data,
                 )
 
-                # Handle 401
+                # Handle 401 (API key rejection or session expiry)
                 if response.status_code == 401:
                     if self._api_key:
                         # API key mode: hard error, no fallback to username/password
@@ -350,7 +354,7 @@ class UniFiLocalClient:
                 return response.json()
 
             except LocalAPIError:
-                raise
+                raise  # Do not let future broad-catch clauses swallow auth errors
             except httpx.ConnectError as e:
                 raise LocalConnectionError(f"Connection error: {e}")
             except httpx.TimeoutException:
@@ -499,6 +503,8 @@ class UniFiLocalClient:
 
     async def _ensure_authenticated(self) -> None:
         """Ensure we have a valid session by making a simple API call."""
+        if self._api_key:
+            return  # API key mode: no session needed
         if not self._cookies:
             # Make a simple call to trigger authentication
             await self.get("/stat/health")

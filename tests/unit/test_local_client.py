@@ -474,10 +474,8 @@ class TestUniFiLocalClientApiKeyAuth:
 
     @pytest.mark.asyncio
     async def test_ak1_request_uses_api_key_no_login(self, mock_settings_with_api_key):
-        """AK1: When API key is set, _request() sends X-API-KEY without calling login()."""
-        import httpx
-        from unittest.mock import AsyncMock, patch
-
+        """AK1: When API key is set, _request() sends X-API-KEY without calling login()
+        and uses the correct UDM URL prefix (/proxy/network/api/s/default/)."""
         client = UniFiLocalClient()
 
         mock_response = MagicMock()
@@ -497,17 +495,24 @@ class TestUniFiLocalClientApiKeyAuth:
             # login() must NOT be called when API key is set
             mock_login.assert_not_called()
 
-            # X-API-KEY header must appear in the request
+            # Verify the actual call args passed to httpx
             call_kwargs = mock_async_client.request.call_args
-            request_headers = call_kwargs.kwargs.get("headers", {}) or call_kwargs.args[3] if len(call_kwargs.args) > 3 else {}
-            assert any("X-API-KEY" in str(h) for h in [request_headers, str(call_kwargs)])
+            request_headers = call_kwargs.kwargs.get("headers", {})
+
+            # X-API-KEY header must be present with the correct value
+            assert "X-API-KEY" in request_headers
+            assert request_headers["X-API-KEY"] == "a" * 40
+
+            # URL must use the UDM proxy prefix, not the legacy /api/s/ path
+            url = call_kwargs.kwargs.get("url", "")
+            assert url.startswith("https://192.168.1.1/proxy/network/api/s/default/")
 
     # ---- AK2: Fallback to username/password when no API key ----
 
     def test_ak2_no_api_key_uses_username_password(self, mock_settings_no_api_key):
         """AK2: When no API key, client initializes with username/password."""
         client = UniFiLocalClient()
-        assert client._api_key == "" or client._api_key is None
+        assert client._api_key == ""
         assert client.username == "admin"
         assert client.password == "password"
 
