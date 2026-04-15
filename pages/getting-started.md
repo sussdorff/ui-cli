@@ -5,15 +5,12 @@ Get up and running with UI-CLI in under 5 minutes.
 ## Quick Install
 
 ```bash
-# Clone the repository
+# Install from PyPI after the first public release
+pip install ui-cli
+
+# Or install from source for development
 git clone https://github.com/vedanta/ui-cli.git
 cd ui-cli
-
-# Install (choose one)
-pip install -e .                    # Using pip
-# OR
-conda env create -f environment.yml  # Using conda
-conda activate ui-cli
 pip install -e .
 ```
 

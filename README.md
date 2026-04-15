@@ -87,7 +87,20 @@ UI-CLI is a comprehensive command-line tool for managing UniFi network infrastru
 - Conda (recommended) or pip
 - Network access to your UniFi controller
 
-### Using Conda (Recommended)
+### Using pip (PyPI)
+
+Once the package is published publicly, install it directly from PyPI:
+
+```bash
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install from PyPI
+pip install ui-cli
+```
+
+### Using Conda (Recommended for Source Checkouts)
 
 ```bash
 # Clone the repository
@@ -102,7 +115,7 @@ conda activate ui-cli
 pip install -e .
 ```
 
-### Using pip
+### Using pip from Source
 
 ```bash
 # Clone the repository

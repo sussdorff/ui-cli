@@ -5,7 +5,20 @@
 - Python 3.10 or higher
 - pip or conda
 
-## Install with pip
+## Install from PyPI
+
+Once the public package is available, install it directly:
+
+```bash
+python -m venv venv
+source venv/bin/activate  # Linux/macOS
+# or
+.\venv\Scripts\activate   # Windows
+
+pip install ui-cli
+```
+
+## Install from Source
 
 ```bash
 # Clone the repository

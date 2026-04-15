@@ -182,7 +182,7 @@ rm ~/.config/ui-cli/session.json
 
 **Solution:**
 ```bash
-pip install -e .
+pip install ui-cli
 # or
 pip install -e ".[dev]"
 ```
