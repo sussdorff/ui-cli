@@ -409,3 +409,217 @@ class TestLocalClientFormatting:
         code = voucher["code"]
         assert "-" in code
         assert len(code.replace("-", "")) == 10
+
+
+class TestUniFiLocalClientApiKeyAuth:
+    """Tests for API key authentication (AK1-AK6)."""
+
+    @pytest.fixture
+    def mock_settings_with_api_key(self):
+        """Mock settings with API key configured."""
+        with patch("ui_cli.local_client.settings") as mock:
+            mock.controller_url = "https://192.168.1.1"
+            mock.controller_username = ""
+            mock.controller_password = ""
+            mock.controller_api_key = "a" * 40  # 40-char hex API key
+            mock.controller_site = "default"
+            mock.controller_verify_ssl = False
+            mock.timeout = 30
+            mock.session_file = MagicMock()
+            mock.session_file.exists.return_value = False
+            yield mock
+
+    @pytest.fixture
+    def mock_settings_no_api_key(self):
+        """Mock settings without API key (uses username/password)."""
+        with patch("ui_cli.local_client.settings") as mock:
+            mock.controller_url = "https://192.168.1.1"
+            mock.controller_username = "admin"
+            mock.controller_password = "password"
+            mock.controller_api_key = ""
+            mock.controller_site = "default"
+            mock.controller_verify_ssl = False
+            mock.timeout = 30
+            mock.session_file = MagicMock()
+            mock.session_file.exists.return_value = False
+            yield mock
+
+    # ---- AK1: X-API-KEY header sent on every request ----
+
+    def test_ak1_api_key_sets_internal_attribute(self, mock_settings_with_api_key):
+        """AK1: Client stores API key when UNIFI_CONTROLLER_API_KEY is set."""
+        client = UniFiLocalClient()
+        assert client._api_key == "a" * 40
+
+    @pytest.mark.asyncio
+    async def test_ak1_x_api_key_header_in_request(self, mock_settings_with_api_key):
+        """AK1: X-API-KEY header is sent on every request when API key is set."""
+        client = UniFiLocalClient()
+        headers = client._get_headers()
+        assert "X-API-KEY" in headers
+        assert headers["X-API-KEY"] == "a" * 40
+
+    @pytest.mark.asyncio
+    async def test_ak1_no_csrf_token_in_api_key_mode(self, mock_settings_with_api_key):
+        """AK1: X-CSRF-Token header is NOT included when using API key auth."""
+        client = UniFiLocalClient()
+        client._csrf_token = "some-csrf-token"  # Even if set, should not appear
+        headers = client._get_headers()
+        assert "X-CSRF-Token" not in headers
+        assert "X-API-KEY" in headers
+
+    @pytest.mark.asyncio
+    async def test_ak1_request_uses_api_key_no_login(self, mock_settings_with_api_key):
+        """AK1: When API key is set, _request() sends X-API-KEY without calling login()."""
+        import httpx
+        from unittest.mock import AsyncMock, patch
+
+        client = UniFiLocalClient()
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"meta": {"rc": "ok"}, "data": []}
+
+        with patch("ui_cli.local_client.httpx.AsyncClient") as mock_client_cls, \
+             patch.object(client, "login", new_callable=AsyncMock) as mock_login:
+            mock_async_client = AsyncMock()
+            mock_async_client.__aenter__ = AsyncMock(return_value=mock_async_client)
+            mock_async_client.__aexit__ = AsyncMock(return_value=None)
+            mock_async_client.request = AsyncMock(return_value=mock_response)
+            mock_client_cls.return_value = mock_async_client
+
+            await client.get("/stat/health")
+
+            # login() must NOT be called when API key is set
+            mock_login.assert_not_called()
+
+            # X-API-KEY header must appear in the request
+            call_kwargs = mock_async_client.request.call_args
+            request_headers = call_kwargs.kwargs.get("headers", {}) or call_kwargs.args[3] if len(call_kwargs.args) > 3 else {}
+            assert any("X-API-KEY" in str(h) for h in [request_headers, str(call_kwargs)])
+
+    # ---- AK2: Fallback to username/password when no API key ----
+
+    def test_ak2_no_api_key_uses_username_password(self, mock_settings_no_api_key):
+        """AK2: When no API key, client initializes with username/password."""
+        client = UniFiLocalClient()
+        assert client._api_key == "" or client._api_key is None
+        assert client.username == "admin"
+        assert client.password == "password"
+
+    @pytest.mark.asyncio
+    async def test_ak2_no_api_key_calls_login(self, mock_settings_no_api_key):
+        """AK2: When no API key is set, ensure_authenticated() calls login()."""
+        client = UniFiLocalClient()
+
+        with patch.object(client, "_load_session", return_value=False), \
+             patch.object(client, "login", new_callable=AsyncMock) as mock_login:
+            await client.ensure_authenticated()
+            mock_login.assert_called_once()
+
+    # ---- AK3: Invalid API key → clear error, no silent fallback ----
+
+    @pytest.mark.asyncio
+    async def test_ak3_invalid_api_key_raises_auth_error(self, mock_settings_with_api_key):
+        """AK3: 401 response with API key raises LocalAuthenticationError (no fallback)."""
+        client = UniFiLocalClient()
+
+        mock_response = MagicMock()
+        mock_response.status_code = 401
+        mock_response.text = "Unauthorized"
+
+        with patch("ui_cli.local_client.httpx.AsyncClient") as mock_client_cls:
+            mock_async_client = AsyncMock()
+            mock_async_client.__aenter__ = AsyncMock(return_value=mock_async_client)
+            mock_async_client.__aexit__ = AsyncMock(return_value=None)
+            mock_async_client.request = AsyncMock(return_value=mock_response)
+            mock_client_cls.return_value = mock_async_client
+
+            with pytest.raises(LocalAuthenticationError, match="API key rejected"):
+                await client.get("/stat/health")
+
+    @pytest.mark.asyncio
+    async def test_ak3_invalid_api_key_does_not_fallback_to_login(self, mock_settings_with_api_key):
+        """AK3: When API key returns 401, login() is NEVER called (no silent fallback)."""
+        client = UniFiLocalClient()
+
+        mock_response = MagicMock()
+        mock_response.status_code = 401
+        mock_response.text = "Unauthorized"
+
+        with patch("ui_cli.local_client.httpx.AsyncClient") as mock_client_cls, \
+             patch.object(client, "login", new_callable=AsyncMock) as mock_login:
+            mock_async_client = AsyncMock()
+            mock_async_client.__aenter__ = AsyncMock(return_value=mock_async_client)
+            mock_async_client.__aexit__ = AsyncMock(return_value=None)
+            mock_async_client.request = AsyncMock(return_value=mock_response)
+            mock_client_cls.return_value = mock_async_client
+
+            with pytest.raises(LocalAuthenticationError):
+                await client.get("/stat/health")
+
+            mock_login.assert_not_called()
+
+    # ---- AK4: Settings field controller_api_key ----
+
+    def test_ak4_settings_has_controller_api_key_field(self):
+        """AK4: Settings class has controller_api_key field."""
+        from ui_cli.config import Settings
+        # Check the field exists with a default of ""
+        s = Settings(
+            UNIFI_CONTROLLER_URL="https://192.168.1.1",
+            UNIFI_CONTROLLER_USERNAME="admin",
+            UNIFI_CONTROLLER_PASSWORD="pass",
+        )
+        assert hasattr(s, "controller_api_key")
+        assert s.controller_api_key == ""
+
+    def test_ak4_controller_api_key_read_from_env(self, monkeypatch):
+        """AK4: controller_api_key is read from UNIFI_CONTROLLER_API_KEY env var."""
+        from ui_cli.config import Settings
+        monkeypatch.setenv("UNIFI_CONTROLLER_API_KEY", "deadbeef" * 5)
+        s = Settings()
+        assert s.controller_api_key == "deadbeef" * 5
+
+    # ---- AK5: is_local_configured accepts API key OR username/password ----
+
+    def test_ak5_is_local_configured_with_api_key(self):
+        """AK5: is_local_configured returns True when controller_url + api_key are set."""
+        from ui_cli.config import Settings
+        s = Settings(
+            UNIFI_CONTROLLER_URL="https://192.168.1.1",
+            UNIFI_CONTROLLER_API_KEY="a" * 40,
+        )
+        assert s.is_local_configured is True
+
+    def test_ak5_is_local_configured_with_username_password(self):
+        """AK5: is_local_configured returns True when controller_url + username + password are set."""
+        from ui_cli.config import Settings
+        s = Settings(
+            UNIFI_CONTROLLER_URL="https://192.168.1.1",
+            UNIFI_CONTROLLER_USERNAME="admin",
+            UNIFI_CONTROLLER_PASSWORD="secret",
+        )
+        assert s.is_local_configured is True
+
+    def test_ak5_is_local_configured_false_with_only_url(self):
+        """AK5: is_local_configured returns False when only controller_url is set."""
+        from ui_cli.config import Settings
+        s = Settings(UNIFI_CONTROLLER_URL="https://192.168.1.1")
+        assert s.is_local_configured is False
+
+    def test_ak5_is_local_configured_false_without_url(self):
+        """AK5: is_local_configured returns False when controller_url is missing."""
+        from ui_cli.config import Settings
+        s = Settings(
+            UNIFI_CONTROLLER_API_KEY="a" * 40,
+        )
+        assert s.is_local_configured is False
+
+    # ---- AK6: init validation skips username/password check when API key set ----
+
+    def test_ak6_init_without_credentials_succeeds_when_api_key_set(self, mock_settings_with_api_key):
+        """AK6: Client __init__ does NOT raise when api_key is set and credentials are empty."""
+        # Should NOT raise LocalAuthenticationError about missing credentials
+        client = UniFiLocalClient()
+        assert client._api_key == "a" * 40
