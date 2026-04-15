@@ -7,7 +7,6 @@ import pytest
 from ui_cli.local_client import (
     LocalAPIError,
     LocalAuthenticationError,
-    LocalConnectionError,
     UniFiLocalClient,
 )
 
@@ -568,6 +567,26 @@ class TestUniFiLocalClientApiKeyAuth:
                 await client.get("/stat/health")
 
             mock_login.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_ak3_v2_request_invalid_api_key_raises_auth_error(self, mock_settings_with_api_key):
+        """AK3: 401 response via _v2_request with API key raises LocalAuthenticationError (no fallback)."""
+        client = UniFiLocalClient()
+
+        mock_response = MagicMock()
+        mock_response.status_code = 401
+        mock_response.text = "Unauthorized"
+        mock_response.is_success = False
+
+        with patch("ui_cli.local_client.httpx.AsyncClient") as mock_client_cls:
+            mock_async_client = AsyncMock()
+            mock_async_client.__aenter__ = AsyncMock(return_value=mock_async_client)
+            mock_async_client.__aexit__ = AsyncMock(return_value=None)
+            mock_async_client.get = AsyncMock(return_value=mock_response)
+            mock_client_cls.return_value = mock_async_client
+
+            with pytest.raises(LocalAuthenticationError, match="API key rejected"):
+                await client.get_ap_groups()
 
     # ---- AK4: Settings field controller_api_key ----
 

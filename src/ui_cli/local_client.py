@@ -12,6 +12,10 @@ import httpx
 
 from ui_cli.config import settings
 
+_API_KEY_REJECTED_MSG = (
+    "API key rejected by controller (HTTP 401). Check UNIFI_CONTROLLER_API_KEY."
+)
+
 
 def _get_quick_timeout() -> int | None:
     """Get quick timeout from local commands if set.
@@ -334,9 +338,7 @@ class UniFiLocalClient:
                 if response.status_code == 401:
                     if self._api_key:
                         # API key mode: hard error, no fallback to username/password
-                        raise LocalAuthenticationError(
-                            "API key rejected by controller (HTTP 401). Check UNIFI_CONTROLLER_API_KEY."
-                        )
+                        raise LocalAuthenticationError(_API_KEY_REJECTED_MSG)
                     if retry_auth:
                         self._clear_session()
                         await self.login()
@@ -501,7 +503,7 @@ class UniFiLocalClient:
 
     # ========== AP Groups (Broadcasting Groups) ==========
 
-    async def _ensure_authenticated(self) -> None:
+    async def _ensure_cookies_loaded(self) -> None:
         """Ensure we have a valid session by making a simple API call."""
         if self._api_key:
             return  # API key mode: no session needed
@@ -522,7 +524,7 @@ class UniFiLocalClient:
         Returns:
             Response JSON or True for successful DELETE
         """
-        await self._ensure_authenticated()
+        await self._ensure_cookies_loaded()
 
         url = f"{self.controller_url}/proxy/network/v2/api/site/{self.site}{endpoint}"
         headers: dict[str, str] = {}
@@ -555,9 +557,7 @@ class UniFiLocalClient:
 
             if response.status_code == 401:
                 if self._api_key:
-                    raise LocalAuthenticationError(
-                        "API key rejected by controller (HTTP 401). Check UNIFI_CONTROLLER_API_KEY."
-                    )
+                    raise LocalAuthenticationError(_API_KEY_REJECTED_MSG)
                 raise LocalAuthenticationError("Session expired")
             if not response.is_success:
                 raise LocalAPIError(
