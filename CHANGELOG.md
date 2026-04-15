@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-04-15
+
+### Added
+
+#### UniFi API Key Authentication (Local Controller)
+- **X-API-KEY header authentication** for UDM/UniFi OS controllers — no session cookies needed
+- `controller_api_key` field in settings — configure via `UI_CLI_CONTROLLER_API_KEY` env var
+- **Automatic UDM prefix detection** — `/proxy/network` prefix applied automatically when API key is used
+- **Legacy controller fallback** — if a 404/405 is received and credentials are available, retries with cookie-based login automatically
+- `is_local_configured()` and `check_local_controller()` updated to accept API key as valid auth method
+- Status command supports API key authentication
+
+### Fixed
+
+- Hard 401 error on invalid/rejected API key — no silent fallback when key is wrong
+- Removed v2 endpoint 404-to-503 remapping regression
+
 ## [0.3.0] - 2024-12-03
 
 ### Added

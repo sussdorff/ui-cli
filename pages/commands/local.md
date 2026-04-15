@@ -5,7 +5,9 @@ Commands that connect directly to your UniFi Controller. Use `./ui local` or the
 ## Prerequisites
 
 - `UNIFI_CONTROLLER_URL` configured in `.env`
-- `UNIFI_CONTROLLER_USERNAME` and `UNIFI_CONTROLLER_PASSWORD` configured
+- **One** of the following authentication methods:
+  - `UNIFI_CONTROLLER_API_KEY` (recommended for UDM/UniFi OS 5.0.3+)
+  - `UNIFI_CONTROLLER_USERNAME` and `UNIFI_CONTROLLER_PASSWORD` (legacy)
 - Network access to your controller
 
 ## Health

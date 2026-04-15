@@ -127,12 +127,21 @@ async def check_site_manager_api(verbose: bool = False) -> dict:
 
 async def check_local_controller(verbose: bool = False) -> dict:
     """Check Local Controller connectivity and auth."""
+    # Determine auth method for display
+    if settings.controller_api_key:
+        auth_method = "API Key"
+    elif settings.controller_username:
+        auth_method = "Username/Password"
+    else:
+        auth_method = "(not configured)"
+
     result = {
         "name": "Local Controller",
         "url": settings.controller_url or "(not configured)",
         "username": settings.controller_username or "(not configured)",
         "site": settings.controller_site or "default",
-        "configured": bool(settings.controller_url and settings.controller_username),
+        "configured": settings.is_local_configured,
+        "auth_method": auth_method,
         "connection": None,
         "connection_time_ms": None,
         "authentication": None,
@@ -146,14 +155,21 @@ async def check_local_controller(verbose: bool = False) -> dict:
         result["error"] = "Set UNIFI_CONTROLLER_URL in .env file"
         return result
 
-    if not settings.controller_username or not settings.controller_password:
-        result["error"] = "Set UNIFI_CONTROLLER_USERNAME and UNIFI_CONTROLLER_PASSWORD in .env file"
+    if not settings.is_local_configured:
+        result["error"] = (
+            "Set UNIFI_CONTROLLER_API_KEY or "
+            "UNIFI_CONTROLLER_USERNAME/UNIFI_CONTROLLER_PASSWORD in .env file"
+        )
         return result
 
     try:
         client = UniFiLocalClient(timeout=STATUS_CHECK_TIMEOUT)
         start = time.perf_counter()
-        await client.login()
+        if settings.controller_api_key:
+            # API key mode: no session handshake needed — use a lightweight request
+            await client.get_health()
+        else:
+            await client.login()
         elapsed_ms = (time.perf_counter() - start) * 1000
 
         result["connection"] = "OK"

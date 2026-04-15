@@ -34,9 +34,20 @@ Edit `.env` with your credentials:
     UNIFI_API_KEY=your-api-key-here
     ```
 
-=== "Local Controller"
+=== "Local Controller (API Key)"
 
     ```bash
+    # Recommended for UDM/UniFi OS 5.0.3+
+    UNIFI_CONTROLLER_URL=https://192.168.1.1
+    UNIFI_CONTROLLER_API_KEY=your-api-key-here
+    UNIFI_CONTROLLER_SITE=default
+    UNIFI_CONTROLLER_VERIFY_SSL=false
+    ```
+
+=== "Local Controller (Username/Password)"
+
+    ```bash
+    # Works on all controller types
     UNIFI_CONTROLLER_URL=https://192.168.1.1
     UNIFI_CONTROLLER_USERNAME=admin
     UNIFI_CONTROLLER_PASSWORD=yourpassword
@@ -50,10 +61,9 @@ Edit `.env` with your credentials:
     # Cloud API
     UNIFI_API_KEY=your-api-key-here
 
-    # Local Controller
+    # Local Controller (API Key - recommended)
     UNIFI_CONTROLLER_URL=https://192.168.1.1
-    UNIFI_CONTROLLER_USERNAME=admin
-    UNIFI_CONTROLLER_PASSWORD=yourpassword
+    UNIFI_CONTROLLER_API_KEY=your-api-key-here
     UNIFI_CONTROLLER_SITE=default
     UNIFI_CONTROLLER_VERIFY_SSL=false
     ```

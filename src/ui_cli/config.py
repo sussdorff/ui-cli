@@ -62,6 +62,10 @@ class Settings(BaseSettings):
         default="",
         description="Local controller password",
     )
+    controller_api_key: str = Field(
+        default="",
+        description="Local controller API key (UniFi OS Dashboard → Settings → Admins → API Keys). Env: UNIFI_CONTROLLER_API_KEY",
+    )
     controller_site: str = Field(
         default="default",
         description="Site name for local controller",
@@ -78,12 +82,17 @@ class Settings(BaseSettings):
 
     @property
     def is_local_configured(self) -> bool:
-        """Check if local controller is configured."""
-        return bool(
-            self.controller_url
-            and self.controller_username
-            and self.controller_password
-        )
+        """Check if local controller is configured.
+
+        Accepts either:
+        - controller_url + controller_api_key (API key auth, UniFi OS >= 5.0.3)
+        - controller_url + controller_username + controller_password (legacy auth)
+        """
+        if not self.controller_url:
+            return False
+        if self.controller_api_key:
+            return True
+        return bool(self.controller_username and self.controller_password)
 
     @property
     def session_file(self) -> Path:
