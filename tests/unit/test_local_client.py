@@ -22,6 +22,7 @@ class TestUniFiLocalClientInit:
             mock.controller_url = "https://192.168.1.1"
             mock.controller_username = "admin"
             mock.controller_password = "password"
+            mock.controller_api_key = ""
             mock.controller_site = "default"
             mock.controller_verify_ssl = False
             mock.timeout = 30
@@ -72,6 +73,7 @@ class TestUniFiLocalClientMethods:
             mock.controller_url = "https://192.168.1.1"
             mock.controller_username = "admin"
             mock.controller_password = "password"
+            mock.controller_api_key = ""
             mock.controller_site = "default"
             mock.controller_verify_ssl = False
             mock.timeout = 30
@@ -215,6 +217,7 @@ class TestUniFiLocalClientWlanMethods:
             mock.controller_url = "https://192.168.1.1"
             mock.controller_username = "admin"
             mock.controller_password = "password"
+            mock.controller_api_key = ""
             mock.controller_site = "default"
             mock.controller_verify_ssl = False
             mock.timeout = 30
@@ -248,6 +251,7 @@ class TestUniFiLocalClientAPGroupMethods:
             mock.controller_url = "https://192.168.1.1"
             mock.controller_username = "admin"
             mock.controller_password = "password"
+            mock.controller_api_key = ""
             mock.controller_site = "default"
             mock.controller_verify_ssl = False
             mock.timeout = 30
@@ -562,15 +566,15 @@ class TestUniFiLocalClientApiKeyAuth:
 
     # ---- AK4: Settings field controller_api_key ----
 
-    def test_ak4_settings_has_controller_api_key_field(self):
+    def test_ak4_settings_has_controller_api_key_field(self, monkeypatch):
         """AK4: Settings class has controller_api_key field."""
         from ui_cli.config import Settings
-        # Check the field exists with a default of ""
-        s = Settings(
-            UNIFI_CONTROLLER_URL="https://192.168.1.1",
-            UNIFI_CONTROLLER_USERNAME="admin",
-            UNIFI_CONTROLLER_PASSWORD="pass",
-        )
+        # Isolate from real config files by overriding env vars
+        monkeypatch.setenv("UNIFI_CONTROLLER_URL", "https://192.168.1.1")
+        monkeypatch.setenv("UNIFI_CONTROLLER_USERNAME", "admin")
+        monkeypatch.setenv("UNIFI_CONTROLLER_PASSWORD", "pass")
+        monkeypatch.delenv("UNIFI_CONTROLLER_API_KEY", raising=False)
+        s = Settings(_env_file=None)
         assert hasattr(s, "controller_api_key")
         assert s.controller_api_key == ""
 
@@ -578,42 +582,47 @@ class TestUniFiLocalClientApiKeyAuth:
         """AK4: controller_api_key is read from UNIFI_CONTROLLER_API_KEY env var."""
         from ui_cli.config import Settings
         monkeypatch.setenv("UNIFI_CONTROLLER_API_KEY", "deadbeef" * 5)
-        s = Settings()
+        s = Settings(_env_file=None)
         assert s.controller_api_key == "deadbeef" * 5
 
     # ---- AK5: is_local_configured accepts API key OR username/password ----
 
-    def test_ak5_is_local_configured_with_api_key(self):
+    def test_ak5_is_local_configured_with_api_key(self, monkeypatch):
         """AK5: is_local_configured returns True when controller_url + api_key are set."""
         from ui_cli.config import Settings
-        s = Settings(
-            UNIFI_CONTROLLER_URL="https://192.168.1.1",
-            UNIFI_CONTROLLER_API_KEY="a" * 40,
-        )
+        monkeypatch.setenv("UNIFI_CONTROLLER_URL", "https://192.168.1.1")
+        monkeypatch.setenv("UNIFI_CONTROLLER_API_KEY", "a" * 40)
+        monkeypatch.delenv("UNIFI_CONTROLLER_USERNAME", raising=False)
+        monkeypatch.delenv("UNIFI_CONTROLLER_PASSWORD", raising=False)
+        s = Settings(_env_file=None)
         assert s.is_local_configured is True
 
-    def test_ak5_is_local_configured_with_username_password(self):
+    def test_ak5_is_local_configured_with_username_password(self, monkeypatch):
         """AK5: is_local_configured returns True when controller_url + username + password are set."""
         from ui_cli.config import Settings
-        s = Settings(
-            UNIFI_CONTROLLER_URL="https://192.168.1.1",
-            UNIFI_CONTROLLER_USERNAME="admin",
-            UNIFI_CONTROLLER_PASSWORD="secret",
-        )
+        monkeypatch.setenv("UNIFI_CONTROLLER_URL", "https://192.168.1.1")
+        monkeypatch.setenv("UNIFI_CONTROLLER_USERNAME", "admin")
+        monkeypatch.setenv("UNIFI_CONTROLLER_PASSWORD", "secret")
+        monkeypatch.delenv("UNIFI_CONTROLLER_API_KEY", raising=False)
+        s = Settings(_env_file=None)
         assert s.is_local_configured is True
 
-    def test_ak5_is_local_configured_false_with_only_url(self):
+    def test_ak5_is_local_configured_false_with_only_url(self, monkeypatch):
         """AK5: is_local_configured returns False when only controller_url is set."""
         from ui_cli.config import Settings
-        s = Settings(UNIFI_CONTROLLER_URL="https://192.168.1.1")
+        monkeypatch.setenv("UNIFI_CONTROLLER_URL", "https://192.168.1.1")
+        monkeypatch.delenv("UNIFI_CONTROLLER_USERNAME", raising=False)
+        monkeypatch.delenv("UNIFI_CONTROLLER_PASSWORD", raising=False)
+        monkeypatch.delenv("UNIFI_CONTROLLER_API_KEY", raising=False)
+        s = Settings(_env_file=None)
         assert s.is_local_configured is False
 
-    def test_ak5_is_local_configured_false_without_url(self):
+    def test_ak5_is_local_configured_false_without_url(self, monkeypatch):
         """AK5: is_local_configured returns False when controller_url is missing."""
         from ui_cli.config import Settings
-        s = Settings(
-            UNIFI_CONTROLLER_API_KEY="a" * 40,
-        )
+        monkeypatch.delenv("UNIFI_CONTROLLER_URL", raising=False)
+        monkeypatch.setenv("UNIFI_CONTROLLER_API_KEY", "a" * 40)
+        s = Settings(_env_file=None)
         assert s.is_local_configured is False
 
     # ---- AK6: init validation skips username/password check when API key set ----

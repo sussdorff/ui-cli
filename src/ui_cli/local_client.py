@@ -61,6 +61,7 @@ class UniFiLocalClient:
         controller_url: str | None = None,
         username: str | None = None,
         password: str | None = None,
+        api_key: str | None = None,
         site: str | None = None,
         verify_ssl: bool | None = None,
         timeout: int | None = None,
@@ -68,6 +69,7 @@ class UniFiLocalClient:
         self.controller_url = (controller_url or settings.controller_url).rstrip("/")
         self.username = username or settings.controller_username
         self.password = password or settings.controller_password
+        self._api_key: str = api_key or settings.controller_api_key
         self.site = site or settings.controller_site
         self.verify_ssl = verify_ssl if verify_ssl is not None else settings.controller_verify_ssl
 
@@ -87,7 +89,8 @@ class UniFiLocalClient:
             raise LocalAuthenticationError(
                 "Controller URL not configured. Set UNIFI_CONTROLLER_URL in .env file."
             )
-        if not self.username or not self.password:
+        # When API key is set, username/password are not required
+        if not self._api_key and (not self.username or not self.password):
             raise LocalAuthenticationError(
                 "Controller credentials not configured. Set UNIFI_CONTROLLER_USERNAME and UNIFI_CONTROLLER_PASSWORD in .env file."
             )
@@ -268,17 +271,29 @@ class UniFiLocalClient:
                 )
 
     async def ensure_authenticated(self) -> None:
-        """Ensure we have a valid session, logging in if needed."""
+        """Ensure we have a valid session, logging in if needed.
+
+        When API key auth is configured, this is a no-op — the key is sent
+        as a header on every request without any session handshake.
+        """
+        if self._api_key:
+            return  # API key mode: no session needed
         if not self._load_session():
             await self.login()
 
     def _get_headers(self) -> dict[str, str]:
-        """Get request headers with CSRF token if available."""
+        """Get request headers.
+
+        In API key mode: sends X-API-KEY, no cookies, no CSRF token.
+        In username/password mode: sends X-CSRF-Token if available.
+        """
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
         }
-        if self._csrf_token:
+        if self._api_key:
+            headers["X-API-KEY"] = self._api_key
+        elif self._csrf_token:
             headers["X-CSRF-Token"] = self._csrf_token
         return headers
 
@@ -294,11 +309,15 @@ class UniFiLocalClient:
 
         url = f"{self.api_prefix}/{endpoint.lstrip('/')}"
 
-        async with httpx.AsyncClient(
-            timeout=self.timeout,
-            verify=self.verify_ssl,
-            cookies=self._cookies,
-        ) as client:
+        # In API key mode: do not pass cookies (stateless header auth)
+        client_kwargs: dict[str, Any] = {
+            "timeout": self.timeout,
+            "verify": self.verify_ssl,
+        }
+        if not self._api_key:
+            client_kwargs["cookies"] = self._cookies
+
+        async with httpx.AsyncClient(**client_kwargs) as client:
             try:
                 response = await client.request(
                     method=method,
@@ -307,8 +326,13 @@ class UniFiLocalClient:
                     json=data,
                 )
 
-                # Handle session expiry
+                # Handle 401
                 if response.status_code == 401:
+                    if self._api_key:
+                        # API key mode: hard error, no fallback to username/password
+                        raise LocalAuthenticationError(
+                            "API key rejected by controller (HTTP 401). Check UNIFI_CONTROLLER_API_KEY."
+                        )
                     if retry_auth:
                         self._clear_session()
                         await self.login()
@@ -325,6 +349,8 @@ class UniFiLocalClient:
 
                 return response.json()
 
+            except LocalAPIError:
+                raise
             except httpx.ConnectError as e:
                 raise LocalConnectionError(f"Connection error: {e}")
             except httpx.TimeoutException:
@@ -493,15 +519,23 @@ class UniFiLocalClient:
         await self._ensure_authenticated()
 
         url = f"{self.controller_url}/proxy/network/v2/api/site/{self.site}{endpoint}"
-        headers = {}
-        if self._csrf_token:
+        headers: dict[str, str] = {}
+        if self._api_key:
+            headers["X-API-KEY"] = self._api_key
+        elif self._csrf_token:
             headers["x-csrf-token"] = self._csrf_token
         if method in ("POST", "PUT"):
             headers["Content-Type"] = "application/json"
 
-        async with httpx.AsyncClient(
-            verify=self.verify_ssl, timeout=self.timeout, cookies=self._cookies
-        ) as client:
+        # In API key mode: stateless, no cookies
+        client_kwargs: dict[str, Any] = {
+            "verify": self.verify_ssl,
+            "timeout": self.timeout,
+        }
+        if not self._api_key:
+            client_kwargs["cookies"] = self._cookies
+
+        async with httpx.AsyncClient(**client_kwargs) as client:
             if method == "GET":
                 response = await client.get(url, headers=headers)
             elif method == "POST":
@@ -514,6 +548,10 @@ class UniFiLocalClient:
                 raise ValueError(f"Unsupported HTTP method: {method}")
 
             if response.status_code == 401:
+                if self._api_key:
+                    raise LocalAuthenticationError(
+                        "API key rejected by controller (HTTP 401). Check UNIFI_CONTROLLER_API_KEY."
+                    )
                 raise LocalAuthenticationError("Session expired")
             if not response.is_success:
                 raise LocalAPIError(
