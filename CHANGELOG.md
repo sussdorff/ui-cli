@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Consolidated package versioning onto the root `VERSION` file for builds and local runs
-- Added release automation for package build validation and Trusted Publishing to TestPyPI/PyPI
+- Aligned the external release flow with `fmcli` and `nanobanana` via a single tag-driven PyPI publish workflow
 - Added `git-cliff` configuration for changelog generation without changing the SemVer workflow
 
 ## [1.2.0] - 2026-04-15

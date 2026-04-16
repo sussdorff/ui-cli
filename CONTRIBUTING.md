@@ -43,42 +43,51 @@ pytest --cov=ui_cli
 
 `ui-cli` now uses a single version source in [`VERSION`](VERSION), while
 [`cliff.toml`](cliff.toml) is only used for changelog generation. Public package
-publishing is handled with GitHub Actions Trusted Publishing.
+publishing is handled with the tag-based GitHub Actions workflow in
+[`release.yml`](.github/workflows/release.yml), analogous to `fmcli` and `nanobanana`.
 
 ### One-time repository setup
 
-1. Create the project on TestPyPI and PyPI using the final distribution name.
-2. Configure GitHub Trusted Publishers for both indexes.
-3. Create GitHub environments named `testpypi` and `pypi`.
-4. Allow the publish workflows to use those environments.
+1. Create the project on PyPI using the final distribution name.
+2. Configure a PyPI Trusted Publisher for this GitHub repository.
+3. Point the publisher at workflow `.github/workflows/release.yml`.
+4. Leave the environment empty unless you intentionally add one later.
+
+Recommended publisher settings:
+
+- PyPI project name: `ui-cli`
+- Owner: `sussdorff`
+- Repository: `ui-cli`
+- Workflow name: `release.yml`
+- Environment name: empty
 
 ### Release workflow
 
 ```bash
 # 0. Install local release tools
 python -m pip install hatch build
+# Install git-cliff separately if needed: https://git-cliff.org/docs/installation/
 
 # 1. Bump the single source version
 hatch version 1.3.0
 
 # 2. Preview unreleased changelog content
-# Install git-cliff separately if needed: https://git-cliff.org/docs/installation/
 git cliff --unreleased
 
 # 3. Run local quality gates
 pytest
-python -m build
+uv build
 ```
 
-1. Trigger the `Publish TestPyPI` workflow manually to verify the package.
-2. Commit the release preparation changes.
-3. Push the version tag that matches `VERSION`, for example `v1.3.0`.
-4. The `Publish PyPI` workflow will build and publish the tagged release.
+1. Commit the release preparation changes.
+2. Push the version tag that matches `VERSION`, for example `v1.3.0`.
+3. The `Release` workflow will test, build, publish to PyPI, and create a GitHub release.
 
 ### Notes
 
 - Keep SemVer. `git-cliff` is configured for changelog generation, not version bumping.
 - The PyPI tag must match the version exactly: `v<contents of VERSION>`.
+- Trusted Publishing removes the need for a long-lived PyPI API token.
 - `hatch` and `git-cliff` are release tools and are not required for normal CLI use.
 
 ## Development Workflow
