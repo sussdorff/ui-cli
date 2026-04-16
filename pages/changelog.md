@@ -6,6 +6,8 @@ All notable changes to UI-CLI are documented here.
 
 ## [Unreleased]
 
+## [2.0.0] - April 16, 2026
+
 ### Removed
 
 - Removed the legacy `ui-mcp` server and the `ui mcp` command tree
