@@ -1,11 +1,10 @@
 # Command Reference
 
-UI-CLI provides four interfaces:
+UI-CLI provides three interfaces:
 
 - **Cloud API** - Commands via `api.ui.com` for multi-site management
 - **Local Controller** - Direct connection to your controller for real-time operations
 - **Client Groups** - Create named groups for bulk actions (parental controls, IoT management)
-- **Claude Desktop** - Natural language control via MCP integration
 
 ## Command Tree
 
@@ -20,8 +19,7 @@ UI-CLI provides four interfaces:
 ├── isp                 # Cloud: ISP metrics
 ├── sdwan               # Cloud: SD-WAN configs
 ├── groups              # Client groups for bulk actions
-├── local (lo)          # Local controller commands
-└── mcp                 # Claude Desktop integration
+└── local (lo)          # Local controller commands
 ```
 
 ## Quick Reference
@@ -68,20 +66,6 @@ UI-CLI provides four interfaces:
 | `./ui lo clients unblock -g <group>` | Unblock all in group |
 
 See [Client Groups](../groups.md) for full documentation.
-
-### Claude Desktop (MCP)
-
-| Tool | Description |
-|------|-------------|
-| `network_health` | Network health summary |
-| `client_count` | Count connected clients |
-| `find_client` | Find client by name |
-| `block_client` | Block a client |
-| `block_group` | Block all clients in a group |
-| `restart_device` | Restart a device |
-| `create_voucher` | Create guest WiFi code |
-
-See [Claude Desktop](mcp.md) for full tool list and setup instructions.
 
 ## Output Formats
 

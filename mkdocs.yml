@@ -80,7 +80,6 @@ nav:
     - Cloud API: commands/cloud.md
     - Local Controller: commands/local.md
     - Client Groups: groups.md
-    - Claude Desktop: commands/mcp.md
   - Examples: examples.md
   - Troubleshooting: troubleshooting.md
   - Changelog: changelog.md

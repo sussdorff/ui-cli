@@ -3,7 +3,7 @@
 import typer
 
 from ui_cli import __version__
-from ui_cli.commands import devices, groups, hosts, isp, mcp, sdwan, sites, speedtest, status, version
+from ui_cli.commands import devices, groups, hosts, isp, sdwan, sites, speedtest, status, version
 from ui_cli.commands import local
 
 # Create main app
@@ -27,9 +27,6 @@ app.add_typer(speedtest.app, name="speedtest")
 # Local controller commands (with alias)
 app.add_typer(local.app, name="local")
 app.add_typer(local.app, name="lo")
-
-# MCP server management
-app.add_typer(mcp.app, name="mcp")
 
 # Client groups (local storage, no controller needed)
 app.add_typer(groups.app, name="groups")

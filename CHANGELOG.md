@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- Removed the legacy `ui-mcp` server and the `ui mcp` command tree; `ui-cli` is now a CLI-only package again
+- Dropped MCP-related packaging entry points, optional dependencies, and bundled documentation
+
 ## [1.2.1] - 2026-04-16
 
 ### Changed

@@ -36,9 +36,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-mcp = [
-    "mcp>=1.0.0",
-]
 dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
@@ -48,7 +45,6 @@ dev = [
 
 [project.scripts]
 ui = "ui_cli.main:app"
-ui-mcp = "ui_mcp.server:main"
 
 [tool.hatch.version]
 source = "regex"
@@ -58,7 +54,6 @@ pattern = "(?m)^(?P<version>\\d+\\.\\d+\\.\\d+)$"
 [tool.hatch.build.targets.sdist]
 include = [
     "/src/ui_cli",
-    "/src/ui_mcp",
     "/README.md",
     "/CHANGELOG.md",
     "/LICENSE",
@@ -66,7 +61,7 @@ include = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/ui_cli", "src/ui_mcp"]
+packages = ["src/ui_cli"]
 
 [tool.ruff]
 line-length = 100

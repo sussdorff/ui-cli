@@ -88,18 +88,6 @@ Groups are stored locally at:
 - `unblock -g <group>` - Unblock all in group
 - `kick -g <group>` - Kick all in group
 
-### MCP Tools
-
-`src/ui_mcp/server.py` - 5 new tools:
-
-| Tool | Description |
-|------|-------------|
-| `list_groups` | List all groups |
-| `get_group` | Get group details |
-| `block_group` | Block all in group |
-| `unblock_group` | Unblock all in group |
-| `group_status` | Live status of group members |
-
 ## Pattern Matching
 
 Auto groups support multiple pattern formats:

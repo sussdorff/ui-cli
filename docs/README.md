@@ -7,7 +7,6 @@ This directory contains project documentation for developers and contributors.
 | Document | Description |
 |----------|-------------|
 | [Client Groups](groups.md) | Groups feature design and implementation |
-| [MCP Server](mcp.md) | MCP server architecture and tools |
 
 ## User Documentation
 
@@ -30,7 +29,6 @@ ui-cmd/
 ├── pages/          # GitHub Pages source (mkdocs)
 ├── design/         # Feature design documents
 ├── src/            # Source code
-│   ├── ui_cli/     # CLI application
-│   └── ui_mcp/     # MCP server
+│   └── ui_cli/     # CLI application
 └── scripts/        # Utility scripts
 ```

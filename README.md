@@ -26,7 +26,6 @@
 - [Cloud API Commands](#cloud-api-commands)
 - [Local Controller Commands](#local-controller-commands)
 - [Client Groups](#client-groups)
-- [Claude Desktop Integration](#claude-desktop-integration)
 - [Output Formats](#output-formats)
 - [Command Reference](#command-reference)
 - [Data Storage](#data-storage)
@@ -62,12 +61,6 @@ UI-CLI is a comprehensive command-line tool for managing UniFi network infrastru
 - **Traffic Analytics** - Deep packet inspection (DPI) statistics by application, per-client traffic breakdown, daily and hourly bandwidth reports
 - **Guest Management** - Create hotspot vouchers with custom duration, data limits, and speed caps, list and delete existing vouchers
 - **Configuration Export** - Export running config to YAML/JSON for backup, filter by section (networks, wireless, firewall, devices)
-
-**Claude Desktop Integration (MCP)**
-- Natural language control of your network via Claude Desktop
-- 21 tools covering status, health, client management, device control, groups, and vouchers
-- Ask questions like "How many devices are connected?" or "Block the kids iPad"
-- Group actions like "Block all kids devices" or "Show status of smart bulbs"
 
 **General**
 - Multiple output formats: table (human-readable), JSON (scripting), CSV (spreadsheets), YAML (config)
@@ -797,102 +790,6 @@ Auto groups dynamically match clients based on rules. Members are evaluated at q
 
 ---
 
-## Claude Desktop Integration
-
-Control your UniFi network using natural language through [Claude Desktop](https://claude.ai/download).
-
-### Setup
-
-```bash
-# Install MCP server to Claude Desktop
-./ui mcp install
-
-# Verify installation
-./ui mcp check
-
-# View current configuration
-./ui mcp show
-
-# Restart Claude Desktop to activate
-```
-
-### MCP Commands
-
-```bash
-./ui mcp install    # Add to Claude Desktop config
-./ui mcp check      # Verify setup and connectivity
-./ui mcp show       # View current configuration
-./ui mcp remove     # Remove from Claude Desktop
-```
-
-### Example Prompts
-
-| You say... | Claude does... |
-|------------|----------------|
-| "How many devices are on my network?" | Counts clients by type |
-| "What's my network health?" | Shows WAN/LAN/WLAN/VPN status |
-| "What's my internet speed?" | Shows last speed test result |
-| "Run a speed test" | Initiates new speed test |
-| "Find my iPhone" | Searches for client by name |
-| "Is the TV online?" | Checks client status |
-| "Block the kids iPad" | Blocks specific client |
-| "Unblock the kids iPad" | Unblocks client |
-| "Block all kids devices" | Blocks entire group |
-| "Restart the garage AP" | Restarts device |
-| "Create a guest WiFi voucher" | Creates voucher |
-| "What groups do I have?" | Lists all groups |
-| "Show the kids devices group" | Shows group details |
-
-### Available Tools (21)
-
-| Category | Tools | Description |
-|----------|-------|-------------|
-| **Status & Health** | `network_status` | Check API connectivity |
-| | `network_health` | Site health summary |
-| | `internet_speed` | Last speed test result |
-| | `run_speedtest` | Run new speed test |
-| | `isp_performance` | ISP metrics over time |
-| **Counts & Lists** | `client_count` | Count clients by category |
-| | `device_list` | List UniFi devices |
-| | `network_list` | List networks/VLANs |
-| **Lookups** | `find_client` | Find client by name/MAC |
-| | `find_device` | Find device by name/MAC/IP |
-| | `client_status` | Check if client is online/blocked |
-| **Actions** | `block_client` | Block from network |
-| | `unblock_client` | Restore access |
-| | `kick_client` | Force disconnect |
-| | `restart_device` | Reboot device |
-| | `create_voucher` | Create guest WiFi code |
-| **Groups** | `list_groups` | List all client groups |
-| | `get_group` | Get group details |
-| | `block_group` | Block all in group |
-| | `unblock_group` | Unblock all in group |
-| | `group_status` | Live status of group members |
-
-### Architecture
-
-```
-┌─────────────────┐
-│  Claude Desktop │
-└────────┬────────┘
-         │ MCP Protocol (stdio)
-         ▼
-┌─────────────────┐
-│   MCP Server    │  ← 21 AI-optimized tools
-│   (ui_mcp)      │
-└────────┬────────┘
-         │ subprocess
-         ▼
-┌─────────────────┐
-│    UI CLI       │  ← All business logic
-│   (ui_cli)      │
-└─────────────────┘
-```
-
-See [MCP Documentation](src/ui_mcp/README.md) for full technical details.
-
----
-
 ## Output Formats
 
 All commands support multiple output formats:
@@ -964,8 +861,7 @@ NO_COLOR=1 ./ui lo health
 ├── isp                 # ISP metrics (cloud)
 ├── sdwan               # SD-WAN configuration (cloud)
 ├── groups              # Client groups (local storage)
-├── local / lo          # Local controller commands
-└── mcp                 # Claude Desktop integration
+└── local / lo          # Local controller commands
 ```
 
 ### Cloud API Commands
@@ -1152,18 +1048,6 @@ NO_COLOR=1 ./ui lo health
 
 </details>
 
-### MCP Commands
-
-```
-./ui mcp
-├── install             # Add to Claude Desktop config
-├── check               # Verify setup
-├── show                # View current config
-└── remove              # Remove from Claude Desktop
-```
-
----
-
 ## Data Storage
 
 UI-CLI stores local data in `~/.config/ui-cli/`:
@@ -1247,7 +1131,6 @@ rm ~/.config/ui-cli/session.json
 ./ui lo --help
 ./ui lo clients --help
 ./ui groups --help
-./ui mcp --help
 ```
 
 ---
@@ -1259,8 +1142,6 @@ rm ~/.config/ui-cli/session.json
 | [Online Documentation](https://vedanta.github.io/ui-cli) | Full documentation site |
 | [User Guide](USERGUIDE.md) | Detailed usage examples |
 | [Client Groups](docs/groups.md) | Groups feature guide |
-| [MCP Server](src/ui_mcp/README.md) | Claude Desktop integration |
-| [MCP Architecture](src/ui_mcp/ARCHITECTURE.md) | Technical design |
 | [Roadmap](ROADMAP.md) | Planned features |
 | [Changelog](CHANGELOG.md) | Version history |
 

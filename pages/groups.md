@@ -298,34 +298,6 @@ Groups are stored in `~/.config/ui-cli/groups.json`:
 }
 ```
 
-## MCP Integration
-
-Groups are available through Claude Desktop via MCP tools:
-
-| Tool | Description | Example Prompt |
-|------|-------------|----------------|
-| `list_groups` | List all groups | "What groups do I have?" |
-| `get_group` | Get group details | "Show the kids devices group" |
-| `block_group` | Block all in group | "Block all kids devices" |
-| `unblock_group` | Unblock all in group | "Unblock the kids devices" |
-| `group_status` | Live status of group | "Are the kids devices online?" |
-
-### Example Conversations
-
-> **You:** Block all kids devices, it's bedtime
->
-> **Claude:** I'll block all devices in the "Kids Devices" group.
->
-> Done! Blocked 3 clients (1 was already blocked).
-
-> **You:** What's the status of my IoT devices?
->
-> **Claude:** Looking at your "IoT Devices" group...
->
-> You have 12 IoT devices:
-> - 10 online
-> - 2 offline (Garage Sensor, Basement Camera)
-
 ## Tips
 
 1. **Use slugs for scripting** - Group slugs (lowercase, hyphenated) are more reliable than names
