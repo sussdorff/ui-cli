@@ -671,6 +671,37 @@ class UniFiLocalClient:
         response = await self.get("/rest/firewallgroup")
         return response.get("data", [])
 
+    # ===== Zone-based firewall (UniFi Network 9+ / zone-based firewall) =====
+    # Modern controllers (UniFi OS / Network 9+) replace the classic
+    # /rest/firewallrule ruleset model with zone-based "firewall policies"
+    # served from the v2 API. The classic endpoint still answers GET with an
+    # empty list on these controllers but rejects creates with
+    # api.err.InvalidValue, so writes must go through the v2 policy API.
+
+    async def get_firewall_zones(self) -> list[dict[str, Any]]:
+        """Get firewall zones (zone-based firewall)."""
+        result = await self._v2_request("GET", "/firewall/zone")
+        return result if isinstance(result, list) else []
+
+    async def get_firewall_policies(self) -> list[dict[str, Any]]:
+        """Get zone-based firewall policies."""
+        result = await self._v2_request("GET", "/firewall-policies")
+        return result if isinstance(result, list) else []
+
+    async def create_firewall_policy(
+        self, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Create a zone-based firewall policy.
+
+        Returns the created policy object (including its assigned ``index``).
+        """
+        result = await self._v2_request("POST", "/firewall-policies", data=payload)
+        return result if isinstance(result, dict) else {}
+
+    async def delete_firewall_policy(self, policy_id: str) -> bool:
+        """Delete a zone-based firewall policy by its id."""
+        return await self._v2_request("DELETE", f"/firewall-policies/{policy_id}")
+
     async def get_port_forwards(self) -> list[dict[str, Any]]:
         """Get all port forwarding rules."""
         response = await self.get("/rest/portforward")

@@ -445,6 +445,73 @@ class TestUniFiLocalClientFirewallRuleMethods:
             )
 
 
+class TestUniFiLocalClientFirewallPolicyMethods:
+    """Tests for the zone-based firewall policy methods (v2 API)."""
+
+    @pytest.fixture
+    def mock_settings(self):
+        with patch("ui_cli.local_client.settings") as mock:
+            mock.controller_url = "https://192.168.1.1"
+            mock.controller_username = "admin"
+            mock.controller_password = "password"
+            mock.controller_api_key = ""
+            mock.controller_site = "default"
+            mock.controller_verify_ssl = False
+            mock.timeout = 30
+            mock.session_file = MagicMock()
+            mock.session_file.exists.return_value = False
+            yield mock
+
+    @pytest.mark.asyncio
+    async def test_get_firewall_zones(self, mock_settings):
+        client = UniFiLocalClient()
+        with patch.object(client, "_v2_request", new_callable=AsyncMock) as mock_v2:
+            mock_v2.return_value = [{"_id": "zone-internal", "name": "Internal"}]
+
+            result = await client.get_firewall_zones()
+
+            assert result == [{"_id": "zone-internal", "name": "Internal"}]
+            mock_v2.assert_called_once_with("GET", "/firewall/zone")
+
+    @pytest.mark.asyncio
+    async def test_get_firewall_policies(self, mock_settings):
+        client = UniFiLocalClient()
+        with patch.object(client, "_v2_request", new_callable=AsyncMock) as mock_v2:
+            mock_v2.return_value = [{"_id": "p1", "name": "Allow"}]
+
+            result = await client.get_firewall_policies()
+
+            assert result == [{"_id": "p1", "name": "Allow"}]
+            mock_v2.assert_called_once_with("GET", "/firewall-policies")
+
+    @pytest.mark.asyncio
+    async def test_create_firewall_policy(self, mock_settings):
+        client = UniFiLocalClient()
+        payload = {"name": "Allow MCP", "action": "ALLOW"}
+        with patch.object(client, "_v2_request", new_callable=AsyncMock) as mock_v2:
+            mock_v2.return_value = {"_id": "policy-new", **payload}
+
+            result = await client.create_firewall_policy(payload)
+
+            assert result["_id"] == "policy-new"
+            mock_v2.assert_called_once_with(
+                "POST", "/firewall-policies", data=payload
+            )
+
+    @pytest.mark.asyncio
+    async def test_delete_firewall_policy(self, mock_settings):
+        client = UniFiLocalClient()
+        with patch.object(client, "_v2_request", new_callable=AsyncMock) as mock_v2:
+            mock_v2.return_value = True
+
+            result = await client.delete_firewall_policy("policy-new")
+
+            assert result is True
+            mock_v2.assert_called_once_with(
+                "DELETE", "/firewall-policies/policy-new"
+            )
+
+
 class TestLocalClientFormatting:
     """Tests for Local Controller data formatting helpers."""
 
