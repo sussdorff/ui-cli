@@ -6,6 +6,8 @@ All notable changes to UI-CLI are documented here.
 
 ## [Unreleased]
 
+## [2.1.0] - June 26, 2026
+
 ### Added
 
 - `ui lo firewall add` for creating classic local-controller firewall rules with
