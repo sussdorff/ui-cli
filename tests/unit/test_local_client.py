@@ -386,6 +386,65 @@ class TestUniFiLocalClientAPGroupMethods:
             mock_request.assert_called_once_with("DELETE", "/apgroups/group-002")
 
 
+class TestUniFiLocalClientFirewallRuleMethods:
+    """Tests for firewall rule write methods."""
+
+    @pytest.fixture
+    def mock_settings(self):
+        """Mock settings for testing."""
+        with patch("ui_cli.local_client.settings") as mock:
+            mock.controller_url = "https://192.168.1.1"
+            mock.controller_username = "admin"
+            mock.controller_password = "password"
+            mock.controller_api_key = ""
+            mock.controller_site = "default"
+            mock.controller_verify_ssl = False
+            mock.timeout = 30
+            mock.session_file = MagicMock()
+            mock.session_file.exists.return_value = False
+            yield mock
+
+    @pytest.mark.asyncio
+    async def test_create_firewall_rule(self, mock_settings):
+        """Test creating a firewall rule through the classic API."""
+        client = UniFiLocalClient()
+        payload = {
+            "name": "Allow Hermes to MacBook MoneyMoney MCP",
+            "ruleset": "LAN_IN",
+            "action": "accept",
+            "protocol": "tcp",
+            "dst_port": "3850",
+        }
+
+        with patch.object(client, "post", new_callable=AsyncMock) as mock_post:
+            mock_post.return_value = {"data": [{"_id": "rule-new", **payload}]}
+
+            result = await client.create_firewall_rule(payload)
+
+            assert result["_id"] == "rule-new"
+            mock_post.assert_called_once_with("/rest/firewallrule", data=payload)
+
+    @pytest.mark.asyncio
+    async def test_update_firewall_rule(self, mock_settings):
+        """Test updating a firewall rule through the classic API."""
+        client = UniFiLocalClient()
+        payload = {"rule_index": 1500}
+
+        with patch.object(client, "_request", new_callable=AsyncMock) as mock_request:
+            mock_request.return_value = {
+                "data": [{"_id": "rule-new", "rule_index": 1500}]
+            }
+
+            result = await client.update_firewall_rule("rule-new", payload)
+
+            assert result["rule_index"] == 1500
+            mock_request.assert_called_once_with(
+                "PUT",
+                "/rest/firewallrule/rule-new",
+                data={"_id": "rule-new", "rule_index": 1500},
+            )
+
+
 class TestLocalClientFormatting:
     """Tests for Local Controller data formatting helpers."""
 
