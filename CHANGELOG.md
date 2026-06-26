@@ -7,179 +7,257 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+
+- **firewall:** Migrate to zone-based policy API
+
 ## [2.1.0] - 2026-06-26
 
 ### Added
 
-- `ui lo firewall add` for creating classic local-controller firewall rules, including
-  IPv4 source/destination filters, port filters, logging, dry-run output, and
-  `--before`/`--after` ordering helpers.
+
+- Green - add firewall rule creation
+
+
+### Tests
+
+
+- Red - cover firewall rule creation
 
 ## [2.0.0] - 2026-04-16
 
-### Removed
+### chore
 
-- Removed the legacy `ui-mcp` server and the `ui mcp` command tree; `ui-cli` is now a CLI-only package again
-- Dropped MCP-related packaging entry points, optional dependencies, and bundled documentation
+
+- Remove legacy MCP server
 
 ## [1.2.1] - 2026-04-16
 
-### Changed
+### chore
 
-- Consolidated package versioning onto the root `VERSION` file for builds and local runs
-- Aligned the external release flow with `fmcli` and `nanobanana` via a single tag-driven PyPI publish workflow
-- Added `git-cliff` configuration for changelog generation without changing the SemVer workflow
+
+- **gitignore:** Ignore local backup artifacts
 
 ## [1.2.0] - 2026-04-15
 
+### chore
+
+
+- Update changelog for API key auth (1.2.0)
+
+- Bump version to 1.2.0
+
+
+### merge
+
+
+- Worktree-bead-ui-cli-a4b
+
+## [1.1.1] - 2026-04-15
+
 ### Added
 
-#### UniFi API Key Authentication (Local Controller)
-- **X-API-KEY header authentication** for UDM/UniFi OS controllers — no session cookies needed
-- `controller_api_key` field in settings — configure via `UI_CLI_CONTROLLER_API_KEY` env var
-- **Automatic UDM prefix detection** — `/proxy/network` prefix applied automatically when API key is used
-- **Legacy controller fallback** — if a 404/405 is received and credentials are available, retries with cookie-based login automatically
-- `is_local_configured()` and `check_local_controller()` updated to accept API key as valid auth method
-- Status command supports API key authentication
+
+- **ui-cli-a4b:** Green — UniFi API key authentication (AK1-AK6)
+
+
+### Documentation
+
+
+- Update feature documentation for ui-cli-a4b — API key auth
+
 
 ### Fixed
 
-- Hard 401 error on invalid/rejected API key — no silent fallback when key is wrong
-- Removed v2 endpoint 404-to-503 remapping regression
 
-## [0.3.0] - 2024-12-03
+- **ui-cli-a4b:** Address review findings iteration 1 — API prefix in key mode, test assertions
 
-### Added
+- **ui-cli-a4b:** Address review findings iteration 2 — v2 AK3 test, extract error constant, rename _ensure_cookies_loaded
 
-#### Claude Desktop Integration (MCP Server)
-- **16 AI-optimized tools** for natural language network management
-- `./ui mcp install` - One-command Claude Desktop setup
-- `./ui mcp check` - Verify installation
-- `./ui mcp show` - View current configuration
-- `./ui mcp remove` - Remove from Claude Desktop
+- **ui-cli-a4b:** Clear error when API key used against non-UDM controller (404/405)
 
-**Available Tools:**
-| Category | Tools |
-|----------|-------|
-| Status & Health | `network_status`, `network_health`, `internet_speed`, `run_speedtest`, `isp_performance` |
-| Counts & Lists | `client_count`, `device_list`, `network_list` |
-| Lookups | `find_client`, `find_device`, `client_status` |
-| Actions | `block_client`, `unblock_client`, `kick_client`, `restart_device`, `create_voucher` |
+- **ui-cli-a4b:** Legacy-controller fallback, status API-key support, remove v2 404-remapping
 
-#### Quick Timeout & Spinners
-- `--quick` / `-q` option for 5-second timeout on connectivity checks
-- `--timeout` / `-t` option for custom timeout values
-- Spinners on all local commands for better UX
-- Default timeout reduced from 30s to 15s
 
-#### CI/CD Support
-- `UNIFI_NO_SPINNER` env var to disable spinners
-- Auto-disable spinners when `CI=true` or `NO_COLOR` is set
+### Tests
 
-### Architecture
-- Subprocess-based tools layer for MCP (CLI remains single source of truth)
-- JSON output for all action commands
 
----
+- **ui-cli-a4b:** Red — API key authentication test class AK1-AK6
 
-## [0.2.0] - 2024-12-01
+
+### chore
+
+
+- **beads:** Update dolt backup state after remote sync
+
+- Bump version to 1.1.1
+
+## [1.1.0] - 2026-04-15
 
 ### Added
 
-#### Local Controller API (Milestone 2)
-- **Health & Monitoring**
-  - `./ui lo health` - Site health summary (WAN, LAN, WLAN, VPN status)
-  - `./ui lo events list` - View recent events with filtering
 
-- **Client Management**
-  - `./ui lo clients list` - List connected clients with filters (wired/wireless/network)
-  - `./ui lo clients all` - List all clients including offline
-  - `./ui lo clients get` - Get client details by name or MAC
-  - `./ui lo clients status` - Comprehensive client status (signal, experience, data usage)
-  - `./ui lo clients block/unblock` - Block or unblock clients
-  - `./ui lo clients kick` - Disconnect (reconnect) clients
-  - `./ui lo clients count` - Count clients by type/network/vendor/AP
-  - `./ui lo clients duplicates` - Find duplicate client names
+- **cli:** Improve wrapper script config loading and venv support
 
-- **Device Management**
-  - `./ui lo devices list` - List network devices
-  - `./ui lo devices get` - Get device details by ID/MAC/name
-  - `./ui lo devices restart` - Restart a device
-  - `./ui lo devices upgrade` - Upgrade device firmware
-  - `./ui lo devices locate` - Toggle locate LED
-  - `./ui lo devices adopt` - Adopt a new device
+- **cli:** Add AP groups management, refactor WLAN commands
 
-- **Network Configuration**
-  - `./ui lo networks list` - List all networks/VLANs
-  - `./ui lo config show` - Export running configuration (table/JSON/YAML)
+- **clients:** Add set-ip command for DHCP reservations
 
-- **Security & Firewall**
-  - `./ui lo firewall list` - List firewall rules with ruleset filter
-  - `./ui lo firewall groups` - List firewall groups (address/port)
-  - `./ui lo portfwd list` - List port forwarding rules
+- **clients:** Add rename command for setting client display names
 
-- **Guest Management**
-  - `./ui lo vouchers list` - List guest vouchers
-  - `./ui lo vouchers create` - Create vouchers with duration/quota/limits
-  - `./ui lo vouchers delete` - Delete vouchers
+- **networks:** Add update command for DHCP range configuration
 
-- **DPI & Statistics**
-  - `./ui lo dpi stats` - Site-level DPI statistics
-  - `./ui lo dpi client` - Per-client DPI breakdown
-  - `./ui lo stats daily` - Daily traffic statistics
-  - `./ui lo stats hourly` - Hourly traffic statistics
+- **wan:** Add WAN DNS management and extend LAN networks DNS options
 
-- **Other**
-  - `./ui speedtest` - Run speedtest via controller
-  - `./ui status` - Enhanced status with local controller info
 
-### Added (Testing)
-- Comprehensive pytest test suite (87 tests)
-  - 71 unit tests
-  - 16 integration tests
-- Test fixtures for mock API responses
-- pytest-asyncio for async test support
+### Documentation
+
+
+- Add CLAUDE.md project instructions and UniFi API reference submodule
+
+- Add X-Sense security range (40-44) to IoT IP schema
+
+- Add X-Sense Base Station AirBnB (.41)
+
+
+### bd
+
+
+- Backup 2026-03-02 16:52
+
+
+### chore
+
+
+- Ignore uv.lock
+
+- Bump version to 1.1.0
+
+## [1.0.0] - 2025-12-04
+
+### Added
+
+
+- Add client groups for bulk actions
+
+
+### Documentation
+
+
+- Rewrite README for clarity and structure
+
+- Comprehensive README rewrite
+
+
+### Fixed
+
+
+- Update docs workflow to use pages/ directory
+
+- Correct Client Groups doc link in README
+
+
+### release
+
+
+- V1.0.0 "Glazed"
+
+## [0.3.0] - 2025-12-03
+
+### Added
+
+
+- Add Docker container support
+
+- Add MCP server for Claude Desktop integration
+
+- Add ./ui mcp command for Claude Desktop integration
+
+- Implement MCP server v2 with tools layer
+
+- Add quick timeout and spinners for local commands
+
 
 ### Changed
-- Updated documentation (README, USERGUIDE, ROADMAP)
-- Added CONTRIBUTING.md and LICENSE
 
----
 
-## [0.1.0] - 2024-11-29
+- Prepare for MCP server v2
+
+
+### Documentation
+
+
+- Add GitHub Pages documentation site
+
+- Compact landing page to avoid scroll
+
+- Redesign landing page with 2-column layout
+
+- Reduce element sizes and fix install command
+
+- Add MCP server documentation
+
+- Add MCP server documentation to main docs
+
+
+### Fixed
+
+
+- Add mcp package check to install/check commands
+
+- Set cwd to project root so .env file is found
+
+- Use wrapper script to load .env for MCP server
+
+- Use sys.executable instead of ./ui wrapper in CLI runner
+
+- Network_list command and add MCP tools test script
+
+
+### chore
+
+
+- Bump version to 0.3.0
+
+
+### wip
+
+
+- MCP server v1 - disabled list_clients due to output issues
+
+## [0.2.0] - 2025-12-01
 
 ### Added
 
-#### Site Manager API (Milestone 1)
-- **Authentication**
-  - API key authentication via `UNIFI_API_KEY`
-  - Connection status check (`./ui status`)
 
-- **Hosts**
-  - `./ui hosts list` - List all controllers
-  - `./ui hosts get` - Get controller details
+- Complete Milestone 2 Local Controller API implementation
 
-- **Sites**
-  - `./ui sites list` - List all sites
 
-- **Devices**
-  - `./ui devices list` - List all devices with host filter
-  - `./ui devices count` - Count devices by model/status/host/product-line
+### Documentation
 
-- **ISP Metrics**
-  - `./ui isp metrics` - ISP performance metrics with interval options
 
-- **SD-WAN**
-  - `./ui sdwan list` - List SD-WAN configurations
-  - `./ui sdwan get` - Get configuration details
-  - `./ui sdwan status` - Get deployment status
+- Rewrite user guide for clarity and completeness
 
-- **Output Formats**
-  - Table (default), JSON, CSV output for all commands
-  - Verbose mode for additional details
+- Update README with new mascot art
 
-### Infrastructure
-- Typer CLI framework
-- Rich terminal formatting
-- httpx async HTTP client
-- pydantic-settings configuration
+- Finalize repository documentation
+
+- Add detailed features list to README
+
+- Add Mermaid command tree diagram to README
+
+- Replace Mermaid diagram with collapsible ASCII trees
+
+
+### chore
+
+
+- Bump version to 0.2.0 and add release notes
+
+
+### style
+
+
+- Fix import order in test file
+
