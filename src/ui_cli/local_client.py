@@ -100,7 +100,8 @@ class UniFiLocalClient:
         # When API key is set, username/password are not required
         if not self._api_key and (not self.username or not self.password):
             raise LocalAuthenticationError(
-                "Controller credentials not configured. Set UNIFI_CONTROLLER_USERNAME and UNIFI_CONTROLLER_PASSWORD in .env file."
+                "Controller credentials not configured. Set "
+                "UNIFI_CONTROLLER_USERNAME and UNIFI_CONTROLLER_PASSWORD in .env file."
             )
 
     @property
@@ -360,9 +361,11 @@ class UniFiLocalClient:
                     else:
                         raise LocalAuthenticationError(
                             f"API key authentication requires UniFi OS (UDM/UDM-Pro/Cloud Gateway, "
-                            f"firmware >= 5.0.3). This controller returned HTTP {response.status_code}, "
+                            f"firmware >= 5.0.3). This controller returned HTTP "
+                            f"{response.status_code}, "
                             f"suggesting it does not support API keys. "
-                            f"Use UNIFI_CONTROLLER_USERNAME/UNIFI_CONTROLLER_PASSWORD for this controller type."
+                            "Use UNIFI_CONTROLLER_USERNAME/UNIFI_CONTROLLER_PASSWORD "
+                            "for this controller type."
                         )
 
                 if response.status_code >= 400:
@@ -644,6 +647,25 @@ class UniFiLocalClient:
         response = await self.get("/rest/firewallrule")
         return response.get("data", [])
 
+    async def create_firewall_rule(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create a classic firewall rule."""
+        response = await self.post("/rest/firewallrule", data=payload)
+        data = response.get("data", [])
+        return data[0] if data else {}
+
+    async def update_firewall_rule(
+        self, rule_id: str, payload: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Update a classic firewall rule."""
+        update_payload = {"_id": rule_id, **payload}
+        response = await self._request(
+            "PUT",
+            f"/rest/firewallrule/{rule_id}",
+            data=update_payload,
+        )
+        data = response.get("data", [])
+        return data[0] if data else {}
+
     async def get_firewall_groups(self) -> list[dict[str, Any]]:
         """Get all firewall groups."""
         response = await self.get("/rest/firewallgroup")
@@ -879,7 +901,14 @@ class UniFiLocalClient:
         response = await self.post(
             "/stat/report/daily.site",
             data={
-                "attrs": ["time", "rx_bytes", "tx_bytes", "num_sta", "wan-rx_bytes", "wan-tx_bytes"],
+                "attrs": [
+                    "time",
+                    "rx_bytes",
+                    "tx_bytes",
+                    "num_sta",
+                    "wan-rx_bytes",
+                    "wan-tx_bytes",
+                ],
                 "n": days,
             },
         )
@@ -890,7 +919,14 @@ class UniFiLocalClient:
         response = await self.post(
             "/stat/report/hourly.site",
             data={
-                "attrs": ["time", "rx_bytes", "tx_bytes", "num_sta", "wan-rx_bytes", "wan-tx_bytes"],
+                "attrs": [
+                    "time",
+                    "rx_bytes",
+                    "tx_bytes",
+                    "num_sta",
+                    "wan-rx_bytes",
+                    "wan-tx_bytes",
+                ],
                 "n": hours,
             },
         )

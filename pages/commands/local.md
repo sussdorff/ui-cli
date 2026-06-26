@@ -179,6 +179,23 @@ Inspect firewall configuration.
 ./ui lo firewall list -v                   # Verbose
 ```
 
+### Add Rule
+
+```bash
+./ui lo firewall add "Allow Hermes to MacBook MoneyMoney MCP" \
+  --ruleset LAN_IN \
+  --action accept \
+  --protocol tcp \
+  --src 192.168.60.63/32 \
+  --dst 192.168.2.120/32 \
+  --dst-port 3850 \
+  --before "VLAN60" \
+  --logging \
+  -y
+
+./ui lo firewall add "Allow MCP" --protocol tcp --dst-port 3850 --dry-run -o json
+```
+
 ### List Groups
 
 View address and port groups.

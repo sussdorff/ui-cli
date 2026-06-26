@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `ui lo firewall add` for creating classic local-controller firewall rules, including
+  IPv4 source/destination filters, port filters, logging, dry-run output, and
+  `--before`/`--after` ordering helpers.
+
 ## [2.0.0] - 2026-04-16
 
 ### Removed

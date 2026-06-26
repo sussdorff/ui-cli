@@ -6,6 +6,11 @@ All notable changes to UI-CLI are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- `ui lo firewall add` for creating classic local-controller firewall rules with
+  IPv4 filters, port filters, dry-run output, and rule ordering helpers.
+
 ## [2.0.0] - April 16, 2026
 
 ### Removed

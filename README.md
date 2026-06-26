@@ -504,6 +504,21 @@ Requires `UNIFI_CONTROLLER_URL`, `UNIFI_CONTROLLER_USERNAME`, and `UNIFI_CONTROL
 ./ui lo firewall list -v               # Verbose with full details
 ./ui lo firewall list -o json          # JSON output
 
+# Create a targeted inter-VLAN allow rule
+./ui lo firewall add "Allow Hermes to MacBook MoneyMoney MCP" \
+  --ruleset LAN_IN \
+  --action accept \
+  --protocol tcp \
+  --src 192.168.60.63/32 \
+  --dst 192.168.2.120/32 \
+  --dst-port 3850 \
+  --before "VLAN60" \
+  --logging \
+  -y
+
+# Preview the UniFi payload without changing the controller
+./ui lo firewall add "Allow MCP" --protocol tcp --dst-port 3850 --dry-run -o json
+
 # Address and port groups
 ./ui lo firewall groups                # List all groups
 ./ui lo firewall groups -v             # Show group members
@@ -956,6 +971,10 @@ NO_COLOR=1 ./ui lo health
 ├── list                # List firewall rules
 │   ├── --ruleset       # Filter by ruleset
 │   └── -v              # Verbose
+├── add <name>          # Create a firewall rule
+│   ├── --src/--dst     # IPv4 address/CIDR filters
+│   ├── --dst-port      # Destination port/list/range
+│   └── --before        # Place before rule ID/name
 └── groups              # List address/port groups
     └── -v              # Show members
 

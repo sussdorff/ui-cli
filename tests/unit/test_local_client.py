@@ -628,8 +628,10 @@ class TestUniFiLocalClientApiKeyAuth:
             mock_login.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_ak3_v2_request_invalid_api_key_raises_auth_error(self, mock_settings_with_api_key):
-        """AK3: 401 response via _v2_request with API key raises LocalAuthenticationError (no fallback)."""
+    async def test_ak3_v2_request_invalid_api_key_raises_auth_error(
+        self, mock_settings_with_api_key
+    ):
+        """AK3: 401 via _v2_request with API key raises LocalAuthenticationError."""
         client = UniFiLocalClient()
 
         mock_response = MagicMock()
@@ -735,9 +737,16 @@ class TestUniFiLocalClientApiKeyAuth:
             # Also make _load_session return True so the retry's ensure_authenticated skips login
             client._load_session = lambda: True
 
-        with patch("ui_cli.local_client.httpx.AsyncClient") as mock_client_cls, \
-             patch.object(client, "login", new_callable=AsyncMock, side_effect=fake_login) as mock_login, \
-             patch.object(client, "_clear_session") as mock_clear:
+        with (
+            patch("ui_cli.local_client.httpx.AsyncClient") as mock_client_cls,
+            patch.object(
+                client,
+                "login",
+                new_callable=AsyncMock,
+                side_effect=fake_login,
+            ) as mock_login,
+            patch.object(client, "_clear_session") as mock_clear,
+        ):
             mock_async_client = AsyncMock()
             mock_async_client.__aenter__ = AsyncMock(return_value=mock_async_client)
             mock_async_client.__aexit__ = AsyncMock(return_value=None)
@@ -843,7 +852,7 @@ class TestUniFiLocalClientApiKeyAuth:
         assert s.is_local_configured is True
 
     def test_ak5_is_local_configured_with_username_password(self, monkeypatch):
-        """AK5: is_local_configured returns True when controller_url + username + password are set."""
+        """AK5: is_local_configured returns True with username/password."""
         from ui_cli.config import Settings
         monkeypatch.setenv("UNIFI_CONTROLLER_URL", "https://192.168.1.1")
         monkeypatch.setenv("UNIFI_CONTROLLER_USERNAME", "admin")
@@ -872,7 +881,9 @@ class TestUniFiLocalClientApiKeyAuth:
 
     # ---- AK6: init validation skips username/password check when API key set ----
 
-    def test_ak6_init_without_credentials_succeeds_when_api_key_set(self, mock_settings_with_api_key):
+    def test_ak6_init_without_credentials_succeeds_when_api_key_set(
+        self, mock_settings_with_api_key
+    ):
         """AK6: Client __init__ does NOT raise when api_key is set and credentials are empty."""
         # Should NOT raise LocalAuthenticationError about missing credentials
         client = UniFiLocalClient()
