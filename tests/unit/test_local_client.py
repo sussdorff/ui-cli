@@ -512,34 +512,6 @@ class TestUniFiLocalClientFirewallPolicyMethods:
             )
 
 
-class TestLocalClientFormatting:
-    """Tests for Local Controller data formatting helpers."""
-
-    def test_device_status_online(self, mock_local_devices_response):
-        """Test device status detection for online devices."""
-        device = mock_local_devices_response[0]
-        assert device["state"] == 1  # 1 = online
-
-    def test_device_status_offline(self):
-        """Test device status detection for offline devices."""
-        device = {"state": 0}
-        assert device["state"] == 0  # 0 = offline
-
-    def test_client_is_wired(self, mock_local_clients_response):
-        """Test client wired/wireless detection."""
-        wired_client = mock_local_clients_response[1]
-        wireless_client = mock_local_clients_response[0]
-        assert wired_client["is_wired"] is True
-        assert wireless_client["is_wired"] is False
-
-    def test_voucher_code_format(self, mock_vouchers_response):
-        """Test voucher code format."""
-        voucher = mock_vouchers_response[0]
-        code = voucher["code"]
-        assert "-" in code
-        assert len(code.replace("-", "")) == 10
-
-
 class TestUniFiLocalClientApiKeyAuth:
     """Tests for API key authentication (AK1-AK6)."""
 
