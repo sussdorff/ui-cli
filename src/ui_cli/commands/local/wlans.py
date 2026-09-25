@@ -105,13 +105,15 @@ def list_wlans(
         ]
         csv_data = []
         for w in wlans:
-            csv_data.append({
-                "_id": w.get("_id", ""),
-                "name": w.get("name", ""),
-                "security": get_security_type(w),
-                "vlan": w.get("vlan", ""),
-                "enabled": "Yes" if w.get("enabled", True) else "No",
-            })
+            csv_data.append(
+                {
+                    "_id": w.get("_id", ""),
+                    "name": w.get("name", ""),
+                    "security": get_security_type(w),
+                    "vlan": w.get("vlan", ""),
+                    "enabled": "Yes" if w.get("enabled", True) else "No",
+                }
+            )
         output_csv(csv_data, columns)
     else:
         from rich.table import Table
@@ -149,9 +151,7 @@ def list_wlans(
                 pmf_map = {"disabled": "Off", "optional": "Optional", "required": "Required"}
                 pmf_display = pmf_map.get(pmf, pmf)
 
-                table.add_row(
-                    wlan_id, name, security, vlan, enabled, band, hide_ssid, pmf_display
-                )
+                table.add_row(wlan_id, name, security, vlan, enabled, band, hide_ssid, pmf_display)
             else:
                 table.add_row(wlan_id, name, security, vlan, enabled)
 

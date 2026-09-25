@@ -1,6 +1,5 @@
 """Network configuration commands for local controller."""
 
-import asyncio
 from typing import Annotated, Any
 
 import typer
@@ -92,14 +91,16 @@ def list_networks(
         ]
         csv_data = []
         for n in networks:
-            csv_data.append({
-                "_id": n.get("_id", ""),
-                "name": n.get("name", ""),
-                "vlan": n.get("vlan", "1"),
-                "ip_subnet": n.get("ip_subnet", ""),
-                "purpose": get_network_purpose(n),
-                "dhcpd_enabled": "Yes" if n.get("dhcpd_enabled") else "No",
-            })
+            csv_data.append(
+                {
+                    "_id": n.get("_id", ""),
+                    "name": n.get("name", ""),
+                    "vlan": n.get("vlan", "1"),
+                    "ip_subnet": n.get("ip_subnet", ""),
+                    "purpose": get_network_purpose(n),
+                    "dhcpd_enabled": "Yes" if n.get("dhcpd_enabled") else "No",
+                }
+            )
         output_csv(csv_data, columns)
     else:
         from rich.table import Table
@@ -124,7 +125,10 @@ def list_networks(
             purpose = get_network_purpose(n)
 
             if verbose:
-                gateway = n.get("dhcpd_gateway", n.get("ip_subnet", "").split("/")[0] if n.get("ip_subnet") else "")
+                gateway = n.get(
+                    "dhcpd_gateway",
+                    n.get("ip_subnet", "").split("/")[0] if n.get("ip_subnet") else "",
+                )
                 domain = n.get("domain_name", "-")
                 table.add_row(network_id, name, vlan, subnet, dhcp, purpose, gateway, domain)
             else:
@@ -219,9 +223,7 @@ def get_network(
 
         # DNS (dhcpd_dns_{1..4}, gated by dhcpd_dns_enabled)
         if network.get("dhcpd_dns_enabled"):
-            dns_parts = [
-                network.get(f"dhcpd_dns_{i}", "") for i in (1, 2, 3, 4)
-            ]
+            dns_parts = [network.get(f"dhcpd_dns_{i}", "") for i in (1, 2, 3, 4)]
             dns_parts = [d for d in dns_parts if d]
             if dns_parts:
                 table.add_row("DNS:", ", ".join(dns_parts))
@@ -352,12 +354,14 @@ def update_network(
         if dns_requested:
             if no_dns:
                 payload["dhcpd_dns_enabled"] = False
-                payload.update({
-                    "dhcpd_dns_1": "",
-                    "dhcpd_dns_2": "",
-                    "dhcpd_dns_3": "",
-                    "dhcpd_dns_4": "",
-                })
+                payload.update(
+                    {
+                        "dhcpd_dns_1": "",
+                        "dhcpd_dns_2": "",
+                        "dhcpd_dns_3": "",
+                        "dhcpd_dns_4": "",
+                    }
+                )
             else:
                 payload["dhcpd_dns_enabled"] = True
                 if dns1 is not None:
@@ -388,10 +392,9 @@ def update_network(
         raise typer.Exit(1)
 
     if output == OutputFormat.JSON:
-        output_json([
-            {"network": needle, "error": err, "result": result}
-            for needle, result, err in results
-        ])
+        output_json(
+            [{"network": needle, "error": err, "result": result} for needle, result, err in results]
+        )
         exit_code = 1 if any(err for _, _, err in results) else 0
         raise typer.Exit(exit_code)
 
@@ -414,9 +417,7 @@ def update_network(
             )
         if dns_requested:
             if result.get("dhcpd_dns_enabled"):
-                dns_parts = [
-                    result.get(f"dhcpd_dns_{i}", "") for i in (1, 2, 3, 4)
-                ]
+                dns_parts = [result.get(f"dhcpd_dns_{i}", "") for i in (1, 2, 3, 4)]
                 dns_parts = [d for d in dns_parts if d]
                 console.print(f"  DNS: {', '.join(dns_parts) if dns_parts else '(enabled, empty)'}")
             else:

@@ -45,7 +45,8 @@ class UniFiClient:
 
         if not self.api_key:
             raise AuthenticationError(
-                "API key not configured. Set UNIFI_API_KEY environment variable or create a .env file."
+                "API key not configured. Set UNIFI_API_KEY environment variable "
+                "or create a .env file."
             )
 
     def _get_headers(self) -> dict[str, str]:
@@ -210,20 +211,22 @@ class UniFiClient:
                 host_id = site_data.get("hostId", "")
                 for period in site_data.get("periods", []):
                     wan_data = period.get("data", {}).get("wan", {})
-                    metrics.append({
-                        "siteId": site_id,
-                        "hostId": host_id,
-                        "timestamp": period.get("metricTime", ""),
-                        "avgLatency": wan_data.get("avgLatency"),
-                        "maxLatency": wan_data.get("maxLatency"),
-                        "downloadKbps": wan_data.get("download_kbps"),
-                        "uploadKbps": wan_data.get("upload_kbps"),
-                        "uptime": wan_data.get("uptime"),
-                        "downtime": wan_data.get("downtime"),
-                        "packetLoss": wan_data.get("packetLoss"),
-                        "ispName": wan_data.get("ispName"),
-                        "ispAsn": wan_data.get("ispAsn"),
-                    })
+                    metrics.append(
+                        {
+                            "siteId": site_id,
+                            "hostId": host_id,
+                            "timestamp": period.get("metricTime", ""),
+                            "avgLatency": wan_data.get("avgLatency"),
+                            "maxLatency": wan_data.get("maxLatency"),
+                            "downloadKbps": wan_data.get("download_kbps"),
+                            "uploadKbps": wan_data.get("upload_kbps"),
+                            "uptime": wan_data.get("uptime"),
+                            "downtime": wan_data.get("downtime"),
+                            "packetLoss": wan_data.get("packetLoss"),
+                            "ispName": wan_data.get("ispName"),
+                            "ispAsn": wan_data.get("ispAsn"),
+                        }
+                    )
 
             return metrics
 

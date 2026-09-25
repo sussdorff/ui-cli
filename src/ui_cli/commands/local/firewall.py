@@ -135,9 +135,7 @@ def normalize_port(value: str | None, label: str) -> str | None:
 
 def derive_ip_version(src_ip: str | None, dst_ip: str | None) -> str:
     """Derive the policy ip_version from the supplied host IPs."""
-    versions = {
-        ipaddress.ip_address(ip).version for ip in (src_ip, dst_ip) if ip
-    }
+    versions = {ipaddress.ip_address(ip).version for ip in (src_ip, dst_ip) if ip}
     if versions == {4}:
         return "IPV4"
     if versions == {6}:
@@ -149,10 +147,7 @@ def find_zone(identifier: str, zones: list[dict[str, Any]]) -> dict[str, Any]:
     """Find a zone by display name or zone key (case-insensitive)."""
     ident = identifier.strip().lower()
     for zone in zones:
-        if (
-            zone.get("name", "").lower() == ident
-            or zone.get("zone_key", "").lower() == ident
-        ):
+        if zone.get("name", "").lower() == ident or zone.get("zone_key", "").lower() == ident:
             return zone
 
     matches = [z for z in zones if ident in z.get("name", "").lower()]
@@ -160,9 +155,7 @@ def find_zone(identifier: str, zones: list[dict[str, Any]]) -> dict[str, Any]:
         return matches[0]
 
     available = ", ".join(sorted(z.get("name", "") for z in zones)) or "(none)"
-    raise ValueError(
-        f"Unknown firewall zone '{identifier}'. Available zones: {available}"
-    )
+    raise ValueError(f"Unknown firewall zone '{identifier}'. Available zones: {available}")
 
 
 def resolve_zone_for_ip(
@@ -205,8 +198,7 @@ def resolve_endpoint_zone(
         if zone is not None:
             return zone
         raise ValueError(
-            f"Could not map {label} IP {ip} to a firewall zone. "
-            f"Pass --{label}-zone explicitly."
+            f"Could not map {label} IP {ip} to a firewall zone. Pass --{label}-zone explicitly."
         )
     raise ValueError(
         f"{label.capitalize()} zone is required for zone-based policies. "
@@ -431,30 +423,20 @@ def add_rule(
             raise ValueError("Rule name cannot be empty")
 
         client = UniFiLocalClient()
-        zones = run_with_spinner(
-            client.get_firewall_zones(), "Fetching firewall zones..."
-        )
+        zones = run_with_spinner(client.get_firewall_zones(), "Fetching firewall zones...")
         if not zones:
             raise ValueError(
                 "Controller returned no firewall zones. This controller may not "
                 "use the zone-based firewall."
             )
 
-        need_networks = (not src_zone and normalized_src) or (
-            not dst_zone and normalized_dst
-        )
+        need_networks = (not src_zone and normalized_src) or (not dst_zone and normalized_dst)
         networks = (
-            run_with_spinner(client.get_networks(), "Fetching networks...")
-            if need_networks
-            else []
+            run_with_spinner(client.get_networks(), "Fetching networks...") if need_networks else []
         )
 
-        src_zone_obj = resolve_endpoint_zone(
-            src_zone, normalized_src, zones, networks, "src"
-        )
-        dst_zone_obj = resolve_endpoint_zone(
-            dst_zone, normalized_dst, zones, networks, "dst"
-        )
+        src_zone_obj = resolve_endpoint_zone(src_zone, normalized_src, zones, networks, "src")
+        dst_zone_obj = resolve_endpoint_zone(dst_zone, normalized_dst, zones, networks, "dst")
 
         payload = build_firewall_policy_payload(
             name=name,
@@ -594,16 +576,16 @@ def list_rules(
         ]
         csv_data = []
         for p in policies:
-            csv_data.append({
-                "name": p.get("name", ""),
-                "action": p.get("action", ""),
-                "protocol": format_policy_protocol(p),
-                "source": format_policy_endpoint(p.get("source", {}), zone_names),
-                "destination": format_policy_endpoint(
-                    p.get("destination", {}), zone_names
-                ),
-                "enabled": "Yes" if p.get("enabled", True) else "No",
-            })
+            csv_data.append(
+                {
+                    "name": p.get("name", ""),
+                    "action": p.get("action", ""),
+                    "protocol": format_policy_protocol(p),
+                    "source": format_policy_endpoint(p.get("source", {}), zone_names),
+                    "destination": format_policy_endpoint(p.get("destination", {}), zone_names),
+                    "enabled": "Yes" if p.get("enabled", True) else "No",
+                }
+            )
         output_csv(csv_data, columns)
     else:
         from rich.table import Table
@@ -681,12 +663,14 @@ def list_groups(
         csv_data = []
         for g in groups:
             members = g.get("group_members", [])
-            csv_data.append({
-                "_id": g.get("_id", ""),
-                "name": g.get("name", ""),
-                "group_type": g.get("group_type", ""),
-                "members": ", ".join(members) if members else "",
-            })
+            csv_data.append(
+                {
+                    "_id": g.get("_id", ""),
+                    "name": g.get("name", ""),
+                    "group_type": g.get("group_type", ""),
+                    "members": ", ".join(members) if members else "",
+                }
+            )
         output_csv(csv_data, columns)
     else:
         from rich.table import Table

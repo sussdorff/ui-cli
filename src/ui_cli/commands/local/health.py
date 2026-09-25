@@ -46,7 +46,6 @@ def extract_issues(health_data: list[dict[str, Any]]) -> list[str]:
 
     for subsystem in health_data:
         name = format_subsystem_name(subsystem.get("subsystem", ""))
-        status = subsystem.get("status", "").lower()
         sub_name = subsystem.get("subsystem", "")
 
         # Check for disconnected devices (common across subsystems)

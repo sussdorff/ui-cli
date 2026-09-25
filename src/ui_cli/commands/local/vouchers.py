@@ -1,18 +1,17 @@
 """Voucher management commands for guest WiFi access."""
 
-import asyncio
 from datetime import datetime, timezone
 from typing import Annotated, Any
 
 import typer
 
+from ui_cli.commands.local.utils import run_with_spinner
 from ui_cli.local_client import LocalAPIError, UniFiLocalClient
 from ui_cli.output import (
     OutputFormat,
     console,
     output_csv,
     output_json,
-    output_table,
     print_error,
     print_success,
 )
@@ -110,7 +109,6 @@ def list_vouchers(
     ] = OutputFormat.TABLE,
 ) -> None:
     """List all vouchers."""
-    from ui_cli.commands.local.utils import run_with_spinner
 
     async def _list():
         client = UniFiLocalClient()
@@ -151,16 +149,18 @@ def list_vouchers(
         ]
         csv_data = []
         for v in vouchers:
-            csv_data.append({
-                "_id": v.get("_id", ""),
-                "code": format_code(v.get("code")),
-                "duration": v.get("duration", 0),
-                "quota": v.get("quota", 1),
-                "used": v.get("used", 0),
-                "qos_usage_quota": v.get("qos_usage_quota", ""),
-                "note": v.get("note", ""),
-                "create_time": format_timestamp(v.get("create_time")),
-            })
+            csv_data.append(
+                {
+                    "_id": v.get("_id", ""),
+                    "code": format_code(v.get("code")),
+                    "duration": v.get("duration", 0),
+                    "quota": v.get("quota", 1),
+                    "used": v.get("used", 0),
+                    "qos_usage_quota": v.get("qos_usage_quota", ""),
+                    "note": v.get("note", ""),
+                    "create_time": format_timestamp(v.get("create_time")),
+                }
+            )
         output_csv(csv_data, columns)
     else:
         from rich.table import Table

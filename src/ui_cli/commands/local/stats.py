@@ -1,6 +1,5 @@
 """Traffic statistics commands for local controller."""
 
-import asyncio
 from datetime import datetime, timezone
 from typing import Annotated, Any
 
@@ -104,13 +103,15 @@ def daily_stats(
         csv_data = []
         for s in stats:
             rx, tx = get_traffic_bytes(s)
-            csv_data.append({
-                "date": format_timestamp(s.get("time")),
-                "rx_bytes": rx,
-                "tx_bytes": tx,
-                "total_bytes": rx + tx,
-                "num_sta": s.get("num_sta", 0),
-            })
+            csv_data.append(
+                {
+                    "date": format_timestamp(s.get("time")),
+                    "rx_bytes": rx,
+                    "tx_bytes": tx,
+                    "total_bytes": rx + tx,
+                    "num_sta": s.get("num_sta", 0),
+                }
+            )
         output_csv(csv_data, columns)
     else:
         from rich.table import Table
@@ -143,7 +144,10 @@ def daily_stats(
 
         console.print(table)
         console.print()
-        console.print(f"[dim]Total: {format_bytes(total_rx)} down, {format_bytes(total_tx)} up ({format_bytes(total_rx + total_tx)} total)[/dim]")
+        console.print(
+            f"[dim]Total: {format_bytes(total_rx)} down, {format_bytes(total_tx)} up "
+            f"({format_bytes(total_rx + total_tx)} total)[/dim]"
+        )
         console.print()
 
 
@@ -191,13 +195,15 @@ def hourly_stats(
         csv_data = []
         for s in stats:
             rx, tx = get_traffic_bytes(s)
-            csv_data.append({
-                "time": format_timestamp(s.get("time"), include_time=True),
-                "rx_bytes": rx,
-                "tx_bytes": tx,
-                "total_bytes": rx + tx,
-                "num_sta": s.get("num_sta", 0),
-            })
+            csv_data.append(
+                {
+                    "time": format_timestamp(s.get("time"), include_time=True),
+                    "rx_bytes": rx,
+                    "tx_bytes": tx,
+                    "total_bytes": rx + tx,
+                    "num_sta": s.get("num_sta", 0),
+                }
+            )
         output_csv(csv_data, columns)
     else:
         from rich.table import Table
@@ -230,5 +236,8 @@ def hourly_stats(
 
         console.print(table)
         console.print()
-        console.print(f"[dim]Total: {format_bytes(total_rx)} down, {format_bytes(total_tx)} up ({format_bytes(total_rx + total_tx)} total)[/dim]")
+        console.print(
+            f"[dim]Total: {format_bytes(total_rx)} down, {format_bytes(total_tx)} up "
+            f"({format_bytes(total_rx + total_tx)} total)[/dim]"
+        )
         console.print()

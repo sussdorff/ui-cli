@@ -85,7 +85,13 @@ def speedtest(
         client = UniFiLocalClient()
 
         if run:
-            from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
+            from rich.progress import (
+                BarColumn,
+                Progress,
+                SpinnerColumn,
+                TextColumn,
+                TimeElapsedColumn,
+            )
 
             # Run a new speed test
             await run_speedtest(client)
@@ -140,6 +146,7 @@ def speedtest(
 
     # Table output
     from datetime import datetime, timezone
+
     from rich.table import Table
 
     console.print()

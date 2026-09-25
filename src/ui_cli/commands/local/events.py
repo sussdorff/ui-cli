@@ -1,6 +1,5 @@
 """Events and alarms commands for local controller."""
 
-import asyncio
 from datetime import datetime, timezone
 from typing import Annotated, Any
 
@@ -12,7 +11,6 @@ from ui_cli.output import (
     console,
     output_csv,
     output_json,
-    output_table,
     print_error,
     print_success,
 )
@@ -96,6 +94,7 @@ def get_alarm_severity(alarm: dict[str, Any]) -> tuple[str, str]:
 
 # ========== Events Commands ==========
 
+
 @app.command("list")
 def list_events(
     limit: Annotated[
@@ -144,11 +143,13 @@ def list_events(
         # Transform for CSV
         csv_data = []
         for e in events:
-            csv_data.append({
-                "time": format_timestamp(e.get("time")),
-                "key": get_event_type(e),
-                "msg": format_event_message(e),
-            })
+            csv_data.append(
+                {
+                    "time": format_timestamp(e.get("time")),
+                    "key": get_event_type(e),
+                    "msg": format_event_message(e),
+                }
+            )
         output_csv(csv_data, columns)
     else:
         from rich.table import Table
@@ -169,6 +170,7 @@ def list_events(
 
 
 # ========== Alarms Commands ==========
+
 
 @alarms_app.command("list")
 def list_alarms(
@@ -210,13 +212,15 @@ def list_alarms(
         ]
         csv_data = []
         for a in alarms:
-            csv_data.append({
-                "_id": a.get("_id", ""),
-                "time": format_timestamp(a.get("time")),
-                "key": get_event_type(a),
-                "msg": format_event_message(a),
-                "archived": "Yes" if a.get("archived") else "No",
-            })
+            csv_data.append(
+                {
+                    "_id": a.get("_id", ""),
+                    "time": format_timestamp(a.get("time")),
+                    "key": get_event_type(a),
+                    "msg": format_event_message(a),
+                    "archived": "Yes" if a.get("archived") else "No",
+                }
+            )
         output_csv(csv_data, columns)
     else:
         from rich.table import Table

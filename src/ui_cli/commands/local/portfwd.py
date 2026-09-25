@@ -1,6 +1,5 @@
 """Port forwarding commands for local controller."""
 
-import asyncio
 from typing import Annotated, Any
 
 import typer
@@ -108,16 +107,18 @@ def list_port_forwards(
         ]
         csv_data = []
         for r in rules:
-            csv_data.append({
-                "_id": r.get("_id", ""),
-                "name": r.get("name", ""),
-                "enabled": "Yes" if r.get("enabled", True) else "No",
-                "proto": format_protocol(r),
-                "dst_port": r.get("dst_port", ""),
-                "fwd": r.get("fwd", ""),
-                "fwd_port": r.get("fwd_port", r.get("dst_port", "")),
-                "pfwd_interface": format_interface(r),
-            })
+            csv_data.append(
+                {
+                    "_id": r.get("_id", ""),
+                    "name": r.get("name", ""),
+                    "enabled": "Yes" if r.get("enabled", True) else "No",
+                    "proto": format_protocol(r),
+                    "dst_port": r.get("dst_port", ""),
+                    "fwd": r.get("fwd", ""),
+                    "fwd_port": r.get("fwd_port", r.get("dst_port", "")),
+                    "pfwd_interface": format_interface(r),
+                }
+            )
         output_csv(csv_data, columns)
     else:
         from rich.table import Table

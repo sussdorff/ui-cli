@@ -1,10 +1,10 @@
 """DPI (Deep Packet Inspection) commands for local controller."""
 
-import asyncio
 from typing import Annotated, Any
 
 import typer
 
+from ui_cli.commands.local.utils import run_with_spinner
 from ui_cli.local_client import LocalAPIError, UniFiLocalClient
 from ui_cli.output import (
     OutputFormat,
@@ -172,13 +172,15 @@ def aggregate_dpi_data(dpi_data: list[dict[str, Any]]) -> list[dict[str, Any]]:
     # Convert to list and sort by total bytes
     result = []
     for key, data in aggregated.items():
-        result.append({
-            "name": data["name"],
-            "rx_bytes": data["rx_bytes"],
-            "tx_bytes": data["tx_bytes"],
-            "total_bytes": data["rx_bytes"] + data["tx_bytes"],
-            "client_count": len(data["clients"]),
-        })
+        result.append(
+            {
+                "name": data["name"],
+                "rx_bytes": data["rx_bytes"],
+                "tx_bytes": data["tx_bytes"],
+                "total_bytes": data["rx_bytes"] + data["tx_bytes"],
+                "client_count": len(data["clients"]),
+            }
+        )
 
     result.sort(key=lambda x: x["total_bytes"], reverse=True)
     return result
@@ -196,7 +198,6 @@ def site_dpi(
     ] = 20,
 ) -> None:
     """Show site-level DPI statistics."""
-    from ui_cli.commands.local.utils import run_with_spinner
 
     async def _dpi():
         client = UniFiLocalClient()
@@ -216,7 +217,9 @@ def site_dpi(
     if not aggregated:
         if not dpi_enabled:
             print_warning("DPI is not enabled on this controller")
-            console.print("[dim]Enable Traffic Identification in Network Settings to use DPI.[/dim]")
+            console.print(
+                "[dim]Enable Traffic Identification in Network Settings to use DPI.[/dim]"
+            )
         else:
             console.print("[dim]No DPI data collected yet.[/dim]")
         return
@@ -258,7 +261,9 @@ def site_dpi(
 
         console.print(table)
         console.print()
-        console.print(f"[dim]Total: {format_bytes(total_rx)} down, {format_bytes(total_tx)} up[/dim]")
+        console.print(
+            f"[dim]Total: {format_bytes(total_rx)} down, {format_bytes(total_tx)} up[/dim]"
+        )
         console.print()
 
 
@@ -321,7 +326,9 @@ def client_dpi(
     if not aggregated:
         if not dpi_enabled:
             print_warning("DPI is not enabled on this controller")
-            console.print("[dim]Enable Traffic Identification in Network Settings to use DPI.[/dim]")
+            console.print(
+                "[dim]Enable Traffic Identification in Network Settings to use DPI.[/dim]"
+            )
         else:
             console.print(f"[dim]No DPI data collected for {mac}.[/dim]")
         return
@@ -365,5 +372,7 @@ def client_dpi(
 
         console.print(table)
         console.print()
-        console.print(f"[dim]Total: {format_bytes(total_rx)} down, {format_bytes(total_tx)} up[/dim]")
+        console.print(
+            f"[dim]Total: {format_bytes(total_rx)} down, {format_bytes(total_tx)} up[/dim]"
+        )
         console.print()

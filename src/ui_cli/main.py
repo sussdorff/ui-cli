@@ -3,8 +3,18 @@
 import typer
 
 from ui_cli import __version__
-from ui_cli.commands import devices, groups, hosts, isp, sdwan, sites, speedtest, status, version
-from ui_cli.commands import local
+from ui_cli.commands import (
+    devices,
+    groups,
+    hosts,
+    isp,
+    local,
+    sdwan,
+    sites,
+    speedtest,
+    status,
+    version,
+)
 
 # Create main app
 app = typer.Typer(

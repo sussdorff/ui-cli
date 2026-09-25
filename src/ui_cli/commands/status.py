@@ -230,10 +230,7 @@ def print_status_table(cloud_status: dict, local_status: dict | None = None) -> 
 
     # Connection status
     if cloud_status["connection"] == "OK":
-        table.add_row(
-            "Connection:",
-            f"[green]OK[/green] ({cloud_status['connection_time_ms']}ms)"
-        )
+        table.add_row("Connection:", f"[green]OK[/green] ({cloud_status['connection_time_ms']}ms)")
     elif cloud_status["connection"] == "FAILED":
         table.add_row("Connection:", "[red]FAILED[/red]")
     else:
@@ -289,8 +286,7 @@ def print_status_table(cloud_status: dict, local_status: dict | None = None) -> 
         # Connection status
         if local_status["connection"] == "OK":
             local_table.add_row(
-                "Connection:",
-                f"[green]OK[/green] ({local_status['connection_time_ms']}ms)"
+                "Connection:", f"[green]OK[/green] ({local_status['connection_time_ms']}ms)"
             )
         elif local_status["connection"] == "FAILED":
             local_table.add_row("Connection:", "[red]FAILED[/red]")

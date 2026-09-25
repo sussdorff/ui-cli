@@ -1,6 +1,5 @@
 """Device management commands for local controller."""
 
-import asyncio
 from typing import Annotated, Any
 
 import typer
@@ -186,17 +185,19 @@ def list_devices(
         csv_data = []
         for d in devices:
             status, _ = get_device_status(d)
-            csv_data.append({
-                "_id": d.get("_id", ""),
-                "mac": d.get("mac", ""),
-                "name": d.get("name", ""),
-                "model": d.get("model", ""),
-                "type": get_device_type(d),
-                "ip": d.get("ip", ""),
-                "version": format_version(d),
-                "state": status,
-                "uptime": get_uptime(d),
-            })
+            csv_data.append(
+                {
+                    "_id": d.get("_id", ""),
+                    "mac": d.get("mac", ""),
+                    "name": d.get("name", ""),
+                    "model": d.get("model", ""),
+                    "type": get_device_type(d),
+                    "ip": d.get("ip", ""),
+                    "version": format_version(d),
+                    "state": status,
+                    "uptime": get_uptime(d),
+                }
+            )
         output_csv(csv_data, columns)
     else:
         from rich.table import Table
@@ -419,7 +420,15 @@ def restart_device(
             console.print("[dim]Device will reboot shortly[/dim]")
     else:
         if output == OutputFormat.JSON:
-            output_json({"success": False, "action": "restart", "name": name, "mac": mac, "error": "API call failed"})
+            output_json(
+                {
+                    "success": False,
+                    "action": "restart",
+                    "name": name,
+                    "mac": mac,
+                    "error": "API call failed",
+                }
+            )
         else:
             print_error(f"Failed to restart '{name}'")
         raise typer.Exit(1)
@@ -566,5 +575,3 @@ def adopt_device(
     else:
         print_error(f"Failed to adopt '{identifier}'")
         raise typer.Exit(1)
-
-
