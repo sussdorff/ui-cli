@@ -1,7 +1,5 @@
 """Unit tests for output formatting utilities."""
 
-import pytest
-
 from ui_cli.output import OutputFormat
 
 

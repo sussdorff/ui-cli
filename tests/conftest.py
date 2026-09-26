@@ -3,20 +3,42 @@
 import os
 from pathlib import Path
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from dotenv import load_dotenv
 
-# Load .env file for integration tests
-env_file = Path(__file__).parent.parent / ".env"
-if env_file.exists():
-    load_dotenv(env_file)
+from ui_cli.config import Settings
+
+
+@pytest.fixture(autouse=True)
+def _isolated_environment(tmp_path_factory, monkeypatch):
+    """Keep tests off the developer's home and Git configuration."""
+    home = tmp_path_factory.mktemp("home")
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(home / ".config"))
+    monkeypatch.setenv("XDG_STATE_HOME", str(home / ".local" / "state"))
+    monkeypatch.setenv("XDG_CACHE_HOME", str(home / ".cache"))
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", os.devnull)
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
+    # The settings singleton reads UNIFI_* variables and config files at import time,
+    # so rebuild it from the isolated environment for every module that bound it.
+    for name in list(os.environ):
+        if name.startswith("UNIFI_"):
+            monkeypatch.delenv(name)
+    isolated_settings = Settings(_env_file=None)
+    for module in (
+        "ui_cli.config",
+        "ui_cli.client",
+        "ui_cli.local_client",
+        "ui_cli.commands.status",
+    ):
+        monkeypatch.setattr(f"{module}.settings", isolated_settings)
 
 
 # ============================================================
 # Mock Data Fixtures
 # ============================================================
+
 
 @pytest.fixture
 def mock_hosts_response() -> list[dict[str, Any]]:
@@ -268,6 +290,7 @@ def mock_daily_stats_response() -> list[dict[str, Any]]:
 # WLAN Fixtures
 # ============================================================
 
+
 @pytest.fixture
 def mock_wlans_response() -> list[dict[str, Any]]:
     """Sample WLANs response from Local Controller API."""
@@ -316,159 +339,3 @@ def mock_wlans_response() -> list[dict[str, Any]]:
             "networkconf_id": "net-003",
         },
     ]
-
-
-@pytest.fixture
-def mock_wlan_groups_response() -> list[dict[str, Any]]:
-    """Sample WLAN groups response from Local Controller API."""
-    return [
-        {
-            "_id": "group-001",
-            "name": "Default",
-            "wlanconf_ids": ["wlan-001", "wlan-002", "wlan-003"],
-        },
-        {
-            "_id": "group-002",
-            "name": "Guest Only",
-            "wlanconf_ids": ["wlan-002"],
-        },
-        {
-            "_id": "group-003",
-            "name": "Mesh Only",
-            "wlanconf_ids": [],
-        },
-    ]
-
-
-@pytest.fixture
-def mock_ap_device() -> dict[str, Any]:
-    """Sample AP device for WLAN group assignment tests."""
-    return {
-        "_id": "device-ap-001",
-        "mac": "e0:63:da:1d:8d:9f",
-        "ip": "192.168.1.50",
-        "name": "Gartenhaus AP",
-        "model": "U6-Mesh",
-        "type": "uap",
-        "version": "6.6.55",
-        "state": 1,
-        "uptime": 259200,
-        "num_sta": 5,
-        "wlangroup_id_ng": "group-001",
-        "wlangroup_id_na": "group-001",
-        "radio_table": [
-            {"radio": "ng", "channel": 6},
-            {"radio": "na", "channel": 149},
-        ],
-    }
-
-
-# ============================================================
-# Groups Fixtures
-# ============================================================
-
-@pytest.fixture
-def mock_groups_data() -> dict[str, Any]:
-    """Sample groups data for testing."""
-    return {
-        "version": 1,
-        "groups": {
-            "kids-devices": {
-                "name": "Kids Devices",
-                "description": "Tablets and phones for the kids",
-                "type": "static",
-                "members": [
-                    {"mac": "AA:BB:CC:DD:EE:FF", "alias": "Timmy iPad"},
-                    {"mac": "11:22:33:44:55:66", "alias": "Sarah Phone"},
-                ],
-                "created_at": "2024-01-15T10:30:00",
-                "updated_at": "2024-01-15T10:35:00",
-            },
-            "apple-devices": {
-                "name": "Apple Devices",
-                "type": "auto",
-                "rules": {"vendor": ["Apple"]},
-                "created_at": "2024-01-15T11:00:00",
-                "updated_at": "2024-01-15T11:00:00",
-            },
-        }
-    }
-
-
-@pytest.fixture
-def mock_clients_for_groups() -> list[dict[str, Any]]:
-    """Sample clients for testing group matching."""
-    return [
-        {
-            "mac": "AA:BB:CC:DD:EE:FF",
-            "ip": "192.168.1.100",
-            "name": "Timmy iPad",
-            "hostname": "timmys-ipad",
-            "oui": "Apple",
-            "network": "Default",
-            "is_wired": False,
-        },
-        {
-            "mac": "11:22:33:44:55:66",
-            "ip": "192.168.1.101",
-            "name": "Sarah Phone",
-            "hostname": "sarahs-phone",
-            "oui": "Apple",
-            "network": "Default",
-            "is_wired": False,
-        },
-        {
-            "mac": "22:33:44:55:66:77",
-            "ip": "192.168.1.102",
-            "name": "Gaming PC",
-            "hostname": "gaming-pc",
-            "oui": "Dell",
-            "network": "Default",
-            "is_wired": True,
-        },
-        {
-            "mac": "33:44:55:66:77:88",
-            "ip": "192.168.100.50",
-            "name": "Guest Phone",
-            "hostname": "guest-phone",
-            "oui": "Samsung",
-            "network": "Guest",
-            "is_wired": False,
-        },
-    ]
-
-
-# ============================================================
-# Environment Fixtures
-# ============================================================
-
-@pytest.fixture
-def integration_env_vars():
-    """Check if integration test configuration is available.
-
-    Checks both environment variables and config files
-    (XDG config, home dotfile, project .env).
-    """
-    from ui_cli.config import settings
-
-    # For local controller tests, check if local controller is configured
-    if not settings.is_local_configured:
-        pytest.skip(
-            "Local controller not configured. "
-            "Set UNIFI_CONTROLLER_URL, UNIFI_CONTROLLER_USERNAME, "
-            "UNIFI_CONTROLLER_PASSWORD in ~/.config/ui-cli/config or .env"
-        )
-    return True
-
-
-@pytest.fixture
-def integration_env_vars_site_manager():
-    """Check if Site Manager API is configured for integration tests."""
-    from ui_cli.config import settings
-
-    if not settings.is_configured:
-        pytest.skip(
-            "Site Manager API not configured. "
-            "Set UNIFI_API_KEY in ~/.config/ui-cli/config or .env"
-        )
-    return True

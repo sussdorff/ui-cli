@@ -12,7 +12,14 @@ from ui_cli.local_client import (
     LocalConnectionError,
     UniFiLocalClient,
 )
-from ui_cli.output import OutputFormat, console, output_count_table, output_csv, output_json, output_table
+from ui_cli.output import (
+    OutputFormat,
+    console,
+    output_count_table,
+    output_csv,
+    output_json,
+    output_table,
+)
 
 app = typer.Typer(help="Manage connected clients")
 
@@ -122,10 +129,11 @@ def is_mac_address(value: str) -> bool:
     """Check if a string looks like a MAC address."""
     # MAC formats: AA:BB:CC:DD:EE:FF or AA-BB-CC-DD-EE-FF or AABBCCDDEEFF
     import re
+
     mac_patterns = [
-        r'^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$',  # AA:BB:CC:DD:EE:FF
-        r'^([0-9A-Fa-f]{2}-){5}[0-9A-Fa-f]{2}$',  # AA-BB-CC-DD-EE-FF
-        r'^[0-9A-Fa-f]{12}$',                       # AABBCCDDEEFF
+        r"^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$",  # AA:BB:CC:DD:EE:FF
+        r"^([0-9A-Fa-f]{2}-){5}[0-9A-Fa-f]{2}$",  # AA-BB-CC-DD-EE-FF
+        r"^[0-9A-Fa-f]{12}$",  # AABBCCDDEEFF
     ]
     return any(re.match(pattern, value) for pattern in mac_patterns)
 
@@ -203,6 +211,7 @@ def list_clients(
     ] = None,
 ) -> None:
     """List active (connected) clients."""
+
     async def _list():
         client = UniFiLocalClient()
         return await client.list_clients()
@@ -216,6 +225,7 @@ def list_clients(
     # Apply group filter
     if group:
         from ui_cli.groups import GroupManager
+
         gm = GroupManager()
         result = gm.get_group(group)
         if not result:
@@ -271,6 +281,7 @@ def list_all_clients(
     ] = False,
 ) -> None:
     """List all known clients (including offline)."""
+
     async def _list():
         client = UniFiLocalClient()
         return await client.list_all_clients()
@@ -318,6 +329,7 @@ def get_client(
         console.print("  ./ui lo clients get my-iPhone")
         console.print("  ./ui lo clients get AA:BB:CC:DD:EE:FF")
         raise typer.Exit(1)
+
     async def _get():
         api_client = UniFiLocalClient()
         mac, name = await resolve_client_identifier(api_client, identifier)
@@ -387,13 +399,13 @@ def set_fixed_ip(
     import re
 
     # Validate IP address format
-    ip_pattern = r'^(\d{1,3}\.){3}\d{1,3}$'
+    ip_pattern = r"^(\d{1,3}\.){3}\d{1,3}$"
     if not re.match(ip_pattern, ip):
         console.print(f"[red]Invalid IP address:[/red] {ip}")
         raise typer.Exit(1)
 
     # Validate IP octets
-    octets = [int(x) for x in ip.split('.')]
+    octets = [int(x) for x in ip.split(".")]
     if any(o < 0 or o > 255 for o in octets):
         console.print(f"[red]Invalid IP address:[/red] {ip}")
         raise typer.Exit(1)
@@ -430,7 +442,9 @@ def set_fixed_ip(
 
     if not user_id:
         console.print(f"[red]Error:[/red] Could not find user record for {identifier}")
-        console.print("[dim]The client may not have connected recently enough to have a user record.[/dim]")
+        console.print(
+            "[dim]The client may not have connected recently enough to have a user record.[/dim]"
+        )
         raise typer.Exit(1)
 
     display = f"{name} ({mac.upper()})" if name else mac.upper()
@@ -453,7 +467,15 @@ def set_fixed_ip(
 
     if not success:
         if output == OutputFormat.JSON:
-            output_json({"success": False, "name": name, "mac": mac, "fixed_ip": ip, "error": "API call failed"})
+            output_json(
+                {
+                    "success": False,
+                    "name": name,
+                    "mac": mac,
+                    "fixed_ip": ip,
+                    "error": "API call failed",
+                }
+            )
         else:
             console.print(f"[red]Failed to set fixed IP for:[/red] {display}")
         raise typer.Exit(1)
@@ -464,6 +486,7 @@ def set_fixed_ip(
     # Kick client to force DHCP renewal (unless --no-kick)
     kicked = False
     if not no_kick:
+
         async def _kick():
             return await api_client.kick_client(mac)
 
@@ -471,12 +494,16 @@ def set_fixed_ip(
             kicked = run_with_spinner(_kick(), "Kicking client for DHCP renewal...")
             if output != OutputFormat.JSON:
                 if kicked:
-                    console.print(f"[green]Kicked client:[/green] {display} (will reconnect with new IP)")
+                    console.print(
+                        f"[green]Kicked client:[/green] {display} (will reconnect with new IP)"
+                    )
                 else:
-                    console.print(f"[yellow]Could not kick client[/yellow] - may need manual reconnect")
+                    console.print(
+                        "[yellow]Could not kick client[/yellow] - may need manual reconnect"
+                    )
         except Exception:
             if output != OutputFormat.JSON:
-                console.print(f"[yellow]Could not kick client[/yellow] - may need manual reconnect")
+                console.print("[yellow]Could not kick client[/yellow] - may need manual reconnect")
 
     if output == OutputFormat.JSON:
         output_json({"success": True, "name": name, "mac": mac, "fixed_ip": ip, "kicked": kicked})
@@ -559,7 +586,9 @@ def client_status(
         return client_info, active_info, name, is_online
 
     try:
-        client_info, active_info, resolved_name, is_online = run_with_spinner(_get_status(), "Checking status...")
+        client_info, active_info, resolved_name, is_online = run_with_spinner(
+            _get_status(), "Checking status..."
+        )
     except Exception as e:
         handle_error(e)
         return
@@ -580,7 +609,9 @@ def client_status(
     conn_type = "Wired" if is_wired else "Wireless"
 
     # Network and AP info
-    network = info.get("network") or info.get("essid") or info.get("last_connection_network_name") or ""
+    network = (
+        info.get("network") or info.get("essid") or info.get("last_connection_network_name") or ""
+    )
     ap_name = info.get("last_uplink_name") or ""
 
     # Wireless-specific info
@@ -672,7 +703,9 @@ def client_status(
                     exp_color = "yellow"
                 else:
                     exp_color = "red"
-                console.print(f"  [dim]Experience:[/dim] [{exp_color}]{satisfaction}%[/{exp_color}]")
+                console.print(
+                    f"  [dim]Experience:[/dim] [{exp_color}]{satisfaction}%[/{exp_color}]"
+                )
 
         # Connection info section (when online)
         if is_online:
@@ -685,23 +718,25 @@ def client_status(
                 rx_str = f"{rx_rate / 1000:.0f}" if rx_rate else "0"
                 console.print(f"  [dim]Speed:[/dim]     ↑{tx_str} / ↓{rx_str} Mbps")
             if tx_bytes or rx_bytes:
-                console.print(f"  [dim]Data:[/dim]      ↑{format_bytes(tx_bytes)} / ↓{format_bytes(rx_bytes)}")
+                console.print(
+                    f"  [dim]Data:[/dim]      ↑{format_bytes(tx_bytes)} / ↓{format_bytes(rx_bytes)}"
+                )
 
         # Status section
         console.print()
         console.print("  [bold]Status[/bold]")
         if is_online:
-            console.print(f"  [dim]Online:[/dim]    [green]Yes[/green]")
+            console.print("  [dim]Online:[/dim]    [green]Yes[/green]")
         else:
-            console.print(f"  [dim]Online:[/dim]    [dim]No[/dim]")
+            console.print("  [dim]Online:[/dim]    [dim]No[/dim]")
 
         if is_blocked:
-            console.print(f"  [dim]Blocked:[/dim]   [red]Yes[/red]")
+            console.print("  [dim]Blocked:[/dim]   [red]Yes[/red]")
         else:
-            console.print(f"  [dim]Blocked:[/dim]   [green]No[/green]")
+            console.print("  [dim]Blocked:[/dim]   [green]No[/green]")
 
         if is_guest:
-            console.print(f"  [dim]Guest:[/dim]     Yes")
+            console.print("  [dim]Guest:[/dim]     Yes")
 
         console.print()
 
@@ -791,7 +826,15 @@ def block_client(
             console.print(f"[green]Blocked client:[/green] {display}")
     else:
         if output == OutputFormat.JSON:
-            output_json({"success": False, "action": "blocked", "name": name, "mac": mac, "error": "API call failed"})
+            output_json(
+                {
+                    "success": False,
+                    "action": "blocked",
+                    "name": name,
+                    "mac": mac,
+                    "error": "API call failed",
+                }
+            )
         else:
             console.print(f"[red]Failed to block client:[/red] {display}")
         raise typer.Exit(1)
@@ -820,7 +863,9 @@ def _block_group(group: str, yes: bool, output: OutputFormat) -> None:
             # Auto group - evaluate rules
             clients = await api_client.list_all_clients()
             matching = gm.evaluate_auto_group(group, clients)
-            members = [{"mac": c["mac"], "name": c.get("name") or c.get("hostname")} for c in matching]
+            members = [
+                {"mac": c["mac"], "name": c.get("name") or c.get("hostname")} for c in matching
+            ]
             return members, api_client
 
     try:
@@ -839,7 +884,7 @@ def _block_group(group: str, yes: bool, output: OutputFormat) -> None:
             console.print("[dim]Cancelled[/dim]")
             raise typer.Exit(0)
 
-    console.print(f"\nBlocking {len(members)} clients in group \"{grp.name}\"...\n")
+    console.print(f'\nBlocking {len(members)} clients in group "{grp.name}"...\n')
 
     # Block each client
     results = {"blocked": 0, "already": 0, "failed": 0}
@@ -883,7 +928,10 @@ def _block_group(group: str, yes: bool, output: OutputFormat) -> None:
             results["failed"] += 1
             result_details.append({"mac": mac, "name": name, "status": "failed"})
 
-    console.print(f"\nBlocked: {results['blocked']} | Already blocked: {results['already']} | Failed: {results['failed']}")
+    console.print(
+        f"\nBlocked: {results['blocked']} | Already blocked: {results['already']} | "
+        f"Failed: {results['failed']}"
+    )
 
     if output == OutputFormat.JSON:
         output_json({"group": grp.name, "results": result_details, "summary": results})
@@ -974,7 +1022,15 @@ def unblock_client(
             console.print(f"[green]Unblocked client:[/green] {display}")
     else:
         if output == OutputFormat.JSON:
-            output_json({"success": False, "action": "unblocked", "name": name, "mac": mac, "error": "API call failed"})
+            output_json(
+                {
+                    "success": False,
+                    "action": "unblocked",
+                    "name": name,
+                    "mac": mac,
+                    "error": "API call failed",
+                }
+            )
         else:
             console.print(f"[red]Failed to unblock client:[/red] {display}")
         raise typer.Exit(1)
@@ -1002,7 +1058,9 @@ def _unblock_group(group: str, yes: bool, output: OutputFormat) -> None:
         else:
             clients = await api_client.list_all_clients()
             matching = gm.evaluate_auto_group(group, clients)
-            members = [{"mac": c["mac"], "name": c.get("name") or c.get("hostname")} for c in matching]
+            members = [
+                {"mac": c["mac"], "name": c.get("name") or c.get("hostname")} for c in matching
+            ]
             return members, api_client
 
     try:
@@ -1020,7 +1078,7 @@ def _unblock_group(group: str, yes: bool, output: OutputFormat) -> None:
             console.print("[dim]Cancelled[/dim]")
             raise typer.Exit(0)
 
-    console.print(f"\nUnblocking {len(members)} clients in group \"{grp.name}\"...\n")
+    console.print(f'\nUnblocking {len(members)} clients in group "{grp.name}"...\n')
 
     results = {"unblocked": 0, "not_blocked": 0, "failed": 0}
     result_details = []
@@ -1031,6 +1089,7 @@ def _unblock_group(group: str, yes: bool, output: OutputFormat) -> None:
         display = f"{name} ({mac.upper()})" if name != mac else mac.upper()
 
         try:
+
             async def _check():
                 all_clients = await api_client.list_all_clients()
                 for c in all_clients:
@@ -1045,6 +1104,7 @@ def _unblock_group(group: str, yes: bool, output: OutputFormat) -> None:
                 results["not_blocked"] += 1
                 result_details.append({"mac": mac, "name": name, "status": "not_blocked"})
             else:
+
                 async def _unblock_one():
                     return await api_client.unblock_client(mac)
 
@@ -1062,7 +1122,10 @@ def _unblock_group(group: str, yes: bool, output: OutputFormat) -> None:
             results["failed"] += 1
             result_details.append({"mac": mac, "name": name, "status": "failed"})
 
-    console.print(f"\nUnblocked: {results['unblocked']} | Not blocked: {results['not_blocked']} | Failed: {results['failed']}")
+    console.print(
+        f"\nUnblocked: {results['unblocked']} | Not blocked: {results['not_blocked']} | "
+        f"Failed: {results['failed']}"
+    )
 
     if output == OutputFormat.JSON:
         output_json({"group": grp.name, "results": result_details, "summary": results})
@@ -1153,7 +1216,15 @@ def kick_client(
             console.print(f"[green]Kicked client:[/green] {display}")
     else:
         if output == OutputFormat.JSON:
-            output_json({"success": False, "action": "kicked", "name": name, "mac": mac, "error": "API call failed"})
+            output_json(
+                {
+                    "success": False,
+                    "action": "kicked",
+                    "name": name,
+                    "mac": mac,
+                    "error": "API call failed",
+                }
+            )
         else:
             console.print(f"[red]Failed to kick client:[/red] {display}")
         raise typer.Exit(1)
@@ -1181,7 +1252,9 @@ def _kick_group(group: str, yes: bool, output: OutputFormat) -> None:
         else:
             clients = await api_client.list_clients()  # Only online clients
             matching = gm.evaluate_auto_group(group, clients)
-            members = [{"mac": c["mac"], "name": c.get("name") or c.get("hostname")} for c in matching]
+            members = [
+                {"mac": c["mac"], "name": c.get("name") or c.get("hostname")} for c in matching
+            ]
             return members, api_client
 
     try:
@@ -1199,7 +1272,7 @@ def _kick_group(group: str, yes: bool, output: OutputFormat) -> None:
             console.print("[dim]Cancelled[/dim]")
             raise typer.Exit(0)
 
-    console.print(f"\nKicking {len(members)} clients in group \"{grp.name}\"...\n")
+    console.print(f'\nKicking {len(members)} clients in group "{grp.name}"...\n')
 
     results = {"kicked": 0, "failed": 0}
     result_details = []
@@ -1210,6 +1283,7 @@ def _kick_group(group: str, yes: bool, output: OutputFormat) -> None:
         display = f"{name} ({mac.upper()})" if name != mac else mac.upper()
 
         try:
+
             async def _kick_one():
                 return await api_client.kick_client(mac)
 
@@ -1278,6 +1352,7 @@ def count_clients(
     ] = OutputFormat.TABLE,
 ) -> None:
     """Count clients grouped by category (online only by default)."""
+
     async def _count():
         api_client = UniFiLocalClient()
         if include_offline:
@@ -1367,6 +1442,7 @@ def rename_client(
         ui lo clients rename 7A:3E:07:23:13:75 "AEG Dampfgarer"
         ui lo clients rename "old-name" "new-name" -y
     """
+
     async def _resolve_and_get_id():
         api_client = UniFiLocalClient()
         mac, current_name = await resolve_client_identifier(api_client, identifier)
@@ -1398,14 +1474,16 @@ def rename_client(
 
     if not user_id:
         console.print(f"[red]Error:[/red] Could not find user record for {identifier}")
-        console.print("[dim]The client may not have connected recently enough to have a user record.[/dim]")
+        console.print(
+            "[dim]The client may not have connected recently enough to have a user record.[/dim]"
+        )
         raise typer.Exit(1)
 
     display = f"{current_name} ({mac.upper()})" if current_name else mac.upper()
 
     # Confirm action
     if not yes:
-        if not typer.confirm(f"Rename {display} to \"{new_name}\"?"):
+        if not typer.confirm(f'Rename {display} to "{new_name}"?'):
             console.print("[dim]Cancelled[/dim]")
             raise typer.Exit(0)
 
@@ -1421,23 +1499,27 @@ def rename_client(
 
     if success:
         if output == OutputFormat.JSON:
-            output_json({
-                "success": True,
-                "mac": mac,
-                "old_name": current_name,
-                "new_name": new_name,
-            })
+            output_json(
+                {
+                    "success": True,
+                    "mac": mac,
+                    "old_name": current_name,
+                    "new_name": new_name,
+                }
+            )
         else:
-            console.print(f"[green]Renamed:[/green] {mac.upper()} -> \"{new_name}\"")
+            console.print(f'[green]Renamed:[/green] {mac.upper()} -> "{new_name}"')
     else:
         if output == OutputFormat.JSON:
-            output_json({
-                "success": False,
-                "mac": mac,
-                "old_name": current_name,
-                "new_name": new_name,
-                "error": "API call failed",
-            })
+            output_json(
+                {
+                    "success": False,
+                    "mac": mac,
+                    "old_name": current_name,
+                    "new_name": new_name,
+                    "error": "API call failed",
+                }
+            )
         else:
             console.print(f"[red]Failed to rename client:[/red] {display}")
         raise typer.Exit(1)
@@ -1459,6 +1541,7 @@ def find_duplicates(
 
     Shows connection type (wired/wireless) to help distinguish.
     """
+
     async def _list():
         api_client = UniFiLocalClient()
         return await api_client.list_all_clients()
@@ -1498,14 +1581,16 @@ def find_duplicates(
 
             for client in clients:
                 is_wired = client.get("is_wired", False)
-                result.append({
-                    "name": client.get("name") or client.get("hostname"),
-                    "mac": client.get("mac", "").upper(),
-                    "ip": client.get("ip") or client.get("last_ip") or "",
-                    "type": "wired" if is_wired else "wireless",
-                    "vendor": client.get("oui", ""),
-                    "likely_multi_nic": likely_multi_nic,
-                })
+                result.append(
+                    {
+                        "name": client.get("name") or client.get("hostname"),
+                        "mac": client.get("mac", "").upper(),
+                        "ip": client.get("ip") or client.get("last_ip") or "",
+                        "type": "wired" if is_wired else "wireless",
+                        "vendor": client.get("oui", ""),
+                        "likely_multi_nic": likely_multi_nic,
+                    }
+                )
         output_json(result)
     else:
         # Table output grouped by name
@@ -1522,7 +1607,10 @@ def find_duplicates(
             likely_multi_nic = has_wired and has_wireless
 
             if likely_multi_nic:
-                console.print(f"[yellow]{display_name}[/yellow] ({len(clients)} NICs) [dim]← likely same device[/dim]")
+                console.print(
+                    f"[yellow]{display_name}[/yellow] ({len(clients)} NICs) "
+                    "[dim]← likely same device[/dim]"
+                )
             else:
                 console.print(f"[yellow]{display_name}[/yellow] ({len(clients)} clients)")
 

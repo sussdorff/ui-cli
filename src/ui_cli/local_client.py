@@ -12,9 +12,7 @@ import httpx
 
 from ui_cli.config import settings
 
-_API_KEY_REJECTED_MSG = (
-    "API key rejected by controller (HTTP 401). Check UNIFI_CONTROLLER_API_KEY."
-)
+_API_KEY_REJECTED_MSG = "API key rejected by controller (HTTP 401). Check UNIFI_CONTROLLER_API_KEY."
 
 
 def _get_quick_timeout() -> int | None:
@@ -25,6 +23,7 @@ def _get_quick_timeout() -> int | None:
     """
     try:
         from ui_cli.commands.local.utils import get_timeout
+
         return get_timeout()
     except ImportError:
         return None
@@ -149,9 +148,7 @@ class UniFiLocalClient:
     def _save_session(self) -> None:
         """Save session to file."""
         # Session expires in 24 hours
-        expires_at = datetime.now(timezone.utc).replace(
-            hour=23, minute=59, second=59
-        ).isoformat()
+        expires_at = datetime.now(timezone.utc).replace(hour=23, minute=59, second=59).isoformat()
 
         data = {
             "controller_url": self.controller_url,
@@ -258,9 +255,7 @@ class UniFiLocalClient:
                             raise LocalAuthenticationError("Invalid username or password")
                     except Exception:
                         pass
-                    raise LocalAuthenticationError(
-                        "Authentication failed - check credentials"
-                    )
+                    raise LocalAuthenticationError("Authentication failed - check credentials")
                 elif response.status_code in (401, 403):
                     raise LocalAuthenticationError("Invalid username or password")
                 else:
@@ -275,9 +270,7 @@ class UniFiLocalClient:
                     f"Could not connect to controller at {self.controller_url}: {e}"
                 )
             except httpx.TimeoutException:
-                raise LocalConnectionError(
-                    f"Connection timeout to {self.controller_url}"
-                )
+                raise LocalConnectionError(f"Connection timeout to {self.controller_url}")
 
     async def ensure_authenticated(self) -> None:
         """Ensure we have a valid session, logging in if needed.
@@ -343,19 +336,17 @@ class UniFiLocalClient:
                     if retry_auth:
                         self._clear_session()
                         await self.login()
-                        return await self._request(
-                            method, endpoint, data, retry_auth=False
-                        )
+                        return await self._request(method, endpoint, data, retry_auth=False)
                     raise SessionExpiredError("Session expired and re-login failed")
 
                 # API key mode: 404/405 may indicate controller doesn't support proxy path
                 if self._api_key and response.status_code in (404, 405):
                     if self.username and self.password:
                         # Fall back to legacy auth path
-                        self._api_key = ""          # disable API key mode
-                        self._is_udm = None         # reset UDM detection
+                        self._api_key = ""  # disable API key mode
+                        self._is_udm = None  # reset UDM detection
                         self._clear_session()
-                        await self.login()          # re-authenticate via username/password
+                        await self.login()  # re-authenticate via username/password
                         # Retry the request on the legacy path (retry_auth=False to prevent loops)
                         return await self._request(method, endpoint, data, retry_auth=False)
                     else:
@@ -387,9 +378,7 @@ class UniFiLocalClient:
         """Make a GET request."""
         return await self._request("GET", endpoint)
 
-    async def post(
-        self, endpoint: str, data: dict[str, Any] | None = None
-    ) -> dict[str, Any]:
+    async def post(self, endpoint: str, data: dict[str, Any] | None = None) -> dict[str, Any]:
         """Make a POST request."""
         return await self._request("POST", endpoint, data=data)
 
@@ -421,9 +410,7 @@ class UniFiLocalClient:
     async def unblock_client(self, mac: str) -> bool:
         """Unblock a client by MAC address."""
         mac = mac.lower().replace("-", ":")
-        response = await self.post(
-            "/cmd/stamgr", data={"cmd": "unblock-sta", "mac": mac}
-        )
+        response = await self.post("/cmd/stamgr", data={"cmd": "unblock-sta", "mac": mac})
         return response.get("meta", {}).get("rc") == "ok"
 
     async def kick_client(self, mac: str) -> bool:
@@ -461,9 +448,7 @@ class UniFiLocalClient:
         response = await self.get("/rest/wlanconf")
         return response.get("data", [])
 
-    async def update_network(
-        self, network_id: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def update_network(self, network_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Update network settings.
 
         Args:
@@ -505,12 +490,14 @@ class UniFiLocalClient:
         """
         payload: dict[str, Any] = {"_id": network_id, "dhcpd_dns_enabled": enabled}
         if not enabled:
-            payload.update({
-                "dhcpd_dns_1": "",
-                "dhcpd_dns_2": "",
-                "dhcpd_dns_3": "",
-                "dhcpd_dns_4": "",
-            })
+            payload.update(
+                {
+                    "dhcpd_dns_1": "",
+                    "dhcpd_dns_2": "",
+                    "dhcpd_dns_3": "",
+                    "dhcpd_dns_4": "",
+                }
+            )
         else:
             if dns1 is not None:
                 payload["dhcpd_dns_1"] = dns1
@@ -581,9 +568,7 @@ class UniFiLocalClient:
                     raise LocalAuthenticationError(_API_KEY_REJECTED_MSG)
                 raise LocalAuthenticationError("Session expired")
             if not response.is_success:
-                raise LocalAPIError(
-                    f"API error: {response.text}", status_code=response.status_code
-                )
+                raise LocalAPIError(f"API error: {response.text}", status_code=response.status_code)
 
             if method == "DELETE":
                 return True
@@ -653,9 +638,7 @@ class UniFiLocalClient:
         data = response.get("data", [])
         return data[0] if data else {}
 
-    async def update_firewall_rule(
-        self, rule_id: str, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def update_firewall_rule(self, rule_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Update a classic firewall rule."""
         update_payload = {"_id": rule_id, **payload}
         response = await self._request(
@@ -688,9 +671,7 @@ class UniFiLocalClient:
         result = await self._v2_request("GET", "/firewall-policies")
         return result if isinstance(result, list) else []
 
-    async def create_firewall_policy(
-        self, payload: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def create_firewall_policy(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Create a zone-based firewall policy.
 
         Returns the created policy object (including its assigned ``index``).
@@ -842,9 +823,7 @@ class UniFiLocalClient:
 
     async def archive_alarm(self, alarm_id: str) -> bool:
         """Archive an alarm by ID."""
-        response = await self.post(
-            "/cmd/evtmgr", data={"cmd": "archive-alarm", "_id": alarm_id}
-        )
+        response = await self.post("/cmd/evtmgr", data={"cmd": "archive-alarm", "_id": alarm_id})
         return response.get("meta", {}).get("rc") == "ok"
 
     async def get_health(self) -> list[dict[str, Any]]:

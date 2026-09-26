@@ -64,7 +64,10 @@ class Settings(BaseSettings):
     )
     controller_api_key: str = Field(
         default="",
-        description="Local controller API key (UniFi OS Dashboard → Settings → Admins → API Keys). Env: UNIFI_CONTROLLER_API_KEY",
+        description=(
+            "Local controller API key (UniFi OS Dashboard → Settings → Admins → API Keys). "
+            "Env: UNIFI_CONTROLLER_API_KEY"
+        ),
     )
     controller_site: str = Field(
         default="default",

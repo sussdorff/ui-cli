@@ -18,9 +18,7 @@ from ui_cli.output import (
 app = typer.Typer(name="apgroups", help="AP Group (broadcasting) management", no_args_is_help=True)
 
 
-def find_ap_group(
-    groups: list[dict[str, Any]], identifier: str
-) -> dict[str, Any] | None:
+def find_ap_group(groups: list[dict[str, Any]], identifier: str) -> dict[str, Any] | None:
     """Find AP group by ID or name."""
     identifier_lower = identifier.lower()
 
@@ -44,9 +42,7 @@ def find_ap_group(
     return None
 
 
-def find_device(
-    devices: list[dict[str, Any]], identifier: str
-) -> dict[str, Any] | None:
+def find_device(devices: list[dict[str, Any]], identifier: str) -> dict[str, Any] | None:
     """Find device by MAC, name, or IP."""
     identifier_lower = identifier.lower().replace("-", ":")
 
@@ -111,10 +107,7 @@ def list_groups(
 
     # Filter out system groups unless --all
     if not all_groups:
-        groups = [
-            g for g in groups
-            if not g.get("attr_hidden_id") and not g.get("for_wlanconf")
-        ]
+        groups = [g for g in groups if not g.get("attr_hidden_id") and not g.get("for_wlanconf")]
 
     if output == OutputFormat.JSON:
         output_json(groups)
@@ -126,11 +119,13 @@ def list_groups(
         ]
         csv_data = []
         for g in groups:
-            csv_data.append({
-                "_id": g.get("_id", ""),
-                "name": g.get("name", ""),
-                "device_count": len(g.get("device_macs", [])),
-            })
+            csv_data.append(
+                {
+                    "_id": g.get("_id", ""),
+                    "name": g.get("name", ""),
+                    "device_count": len(g.get("device_macs", [])),
+                }
+            )
         output_csv(csv_data, columns)
     else:
         from rich.table import Table
@@ -190,11 +185,7 @@ def get_group(
         return
 
     # Build device lookup
-    device_lookup = {
-        d.get("mac", "").lower(): d
-        for d in devices
-        if d.get("type") == "uap"
-    }
+    device_lookup = {d.get("mac", "").lower(): d for d in devices if d.get("type") == "uap"}
 
     # Table output
     from rich.table import Table

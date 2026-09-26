@@ -3,8 +3,8 @@
 import typer
 from rich.console import Console
 
-from ui_cli.groups import GroupManager, AutoGroupRules
-from ui_cli.output import output_table, output_json, output_csv
+from ui_cli.groups import AutoGroupRules, GroupManager
+from ui_cli.output import output_csv, output_json, output_table
 
 app = typer.Typer(
     name="groups",
@@ -46,13 +46,15 @@ def list_groups(
         member_count: str | int = len(group.members) if group.members else 0
         if group.type == "auto":
             member_count = "(auto)"
-        data.append({
-            "slug": slug,
-            "name": group.name,
-            "type": group.type,
-            "member_count": member_count,
-            "description": group.description or "",
-        })
+        data.append(
+            {
+                "slug": slug,
+                "name": group.name,
+                "type": group.type,
+                "member_count": member_count,
+                "description": group.description or "",
+            }
+        )
 
     if output == "json":
         output_json(data)
@@ -61,7 +63,7 @@ def list_groups(
     else:
         if not data:
             console.print("[dim]No groups defined. Create one with:[/dim]")
-            console.print("  ./ui groups create \"My Group\"")
+            console.print('  ./ui groups create "My Group"')
             return
         output_table(data, GROUP_COLUMNS)
 
@@ -129,10 +131,7 @@ def show_group(
 
         if group.members:
             console.print()
-            member_data = [
-                {"alias": m.alias or "-", "mac": m.mac}
-                for m in group.members
-            ]
+            member_data = [{"alias": m.alias or "-", "mac": m.mac} for m in group.members]
             output_table(member_data, MEMBER_COLUMNS)
         else:
             console.print("\n[dim]No members. Add with:[/dim]")
@@ -415,7 +414,9 @@ def create_auto_group(
     # Check at least one rule specified
     if not any([vendor, name_pattern, hostname, network, ip, mac, conn_type]):
         console.print("[red]Error:[/red] Specify at least one rule")
-        console.print("[dim]Available: --vendor, --name, --hostname, --network, --ip, --mac, --type[/dim]")
+        console.print(
+            "[dim]Available: --vendor, --name, --hostname, --network, --ip, --mac, --type[/dim]"
+        )
         raise typer.Exit(1)
 
     gm = GroupManager()
@@ -461,9 +462,8 @@ def export_groups(
 
     if output_file:
         from pathlib import Path
-        Path(output_file).write_text(
-            __import__("json").dumps(data, indent=2, default=str)
-        )
+
+        Path(output_file).write_text(__import__("json").dumps(data, indent=2, default=str))
         console.print(f"[green]Exported to:[/green] {output_file}")
     else:
         output_json(data)
@@ -476,8 +476,8 @@ def import_groups(
     yes: bool = typer.Option(False, "-y", "--yes", help="Skip confirmation"),
 ) -> None:
     """Import groups from JSON file."""
-    from pathlib import Path
     import json
+    from pathlib import Path
 
     path = Path(input_file)
     if not path.exists():

@@ -5,7 +5,6 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-
 # ========== Host Models ==========
 
 
@@ -31,9 +30,7 @@ class Host(BaseModel):
     type: str | None = None
     ip_address: str | None = Field(None, alias="ipAddress")
     is_blocked: bool | None = Field(None, alias="isBlocked")
-    last_connection_state_change: datetime | None = Field(
-        None, alias="lastConnectionStateChange"
-    )
+    last_connection_state_change: datetime | None = Field(None, alias="lastConnectionStateChange")
     latest_backup_time: datetime | None = Field(None, alias="latestBackupTime")
     registration_time: datetime | None = Field(None, alias="registrationTime")
     owner: bool | None = None

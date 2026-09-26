@@ -6,12 +6,13 @@ Supports both static (manual membership) and auto (rule-based) groups.
 Storage: ~/.config/ui-cli/groups.json
 """
 
-from pathlib import Path
-from datetime import datetime, timezone
-from typing import Literal
+import fnmatch
 import json
 import re
-import fnmatch
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -82,9 +83,7 @@ class GroupManager:
     def _save(self) -> None:
         """Save groups to disk."""
         self._path.parent.mkdir(parents=True, exist_ok=True)
-        self._path.write_text(
-            json.dumps(self.data.model_dump(), indent=2, default=str)
-        )
+        self._path.write_text(json.dumps(self.data.model_dump(), indent=2, default=str))
 
     @staticmethod
     def slugify(name: str) -> str:

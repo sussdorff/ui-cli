@@ -1,6 +1,5 @@
 """Running configuration commands for local controller."""
 
-import asyncio
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Annotated
@@ -20,6 +19,7 @@ app = typer.Typer(help="View running configuration")
 
 class ConfigSection(str, Enum):
     """Configuration sections."""
+
     ALL = "all"
     NETWORKS = "networks"
     WIRELESS = "wireless"
@@ -64,13 +64,16 @@ def format_uptime(seconds: int) -> str:
 # Formatting Functions for Each Section
 # ============================================================
 
+
 def format_networks_section(networks: list[dict], verbose: bool = False) -> None:
     """Format and print networks section."""
     if not networks:
         console.print("  [dim](no networks configured)[/dim]")
         return
 
-    for net in sorted(networks, key=lambda x: x.get("vlan_enabled", False) and x.get("vlan", 0) or 0):
+    for net in sorted(
+        networks, key=lambda x: x.get("vlan_enabled", False) and x.get("vlan", 0) or 0
+    ):
         name = net.get("name", "Unnamed")
         purpose = net.get("purpose", "unknown")
 
@@ -106,9 +109,9 @@ def format_networks_section(networks: list[dict], verbose: bool = False) -> None
             if dhcp_start and dhcp_stop:
                 console.print(f"    [dim]DHCP:[/dim]          Enabled ({dhcp_start} - {dhcp_stop})")
             else:
-                console.print(f"    [dim]DHCP:[/dim]          Enabled")
+                console.print("    [dim]DHCP:[/dim]          Enabled")
         else:
-            console.print(f"    [dim]DHCP:[/dim]          Disabled")
+            console.print("    [dim]DHCP:[/dim]          Disabled")
 
         # DNS
         dns1 = net.get("dhcpd_dns_1", "")
@@ -124,11 +127,11 @@ def format_networks_section(networks: list[dict], verbose: bool = False) -> None
 
         # Isolation
         if net.get("network_isolation", False):
-            console.print(f"    [dim]Isolation:[/dim]     [yellow]Yes[/yellow]")
+            console.print("    [dim]Isolation:[/dim]     [yellow]Yes[/yellow]")
 
         # Internet access
         if net.get("internet_access_enabled") is False:
-            console.print(f"    [dim]Internet:[/dim]      [red]Blocked[/red]")
+            console.print("    [dim]Internet:[/dim]      [red]Blocked[/red]")
 
         if verbose:
             net_id = net.get("_id", "")
@@ -191,19 +194,19 @@ def format_wireless_section(wlans: list[dict], networks: list[dict], verbose: bo
 
         # Hidden SSID
         if wlan.get("hide_ssid", False):
-            console.print(f"    [dim]Hidden:[/dim]        Yes")
+            console.print("    [dim]Hidden:[/dim]        Yes")
 
         # Guest network
         if wlan.get("is_guest", False):
-            console.print(f"    [dim]Guest:[/dim]         Yes")
+            console.print("    [dim]Guest:[/dim]         Yes")
 
         # Client isolation
         if wlan.get("ap_group_isolation", False) or wlan.get("l2_isolation", False):
-            console.print(f"    [dim]Isolation:[/dim]     Yes")
+            console.print("    [dim]Isolation:[/dim]     Yes")
 
         # Fast roaming
         if wlan.get("fast_roaming_enabled", False):
-            console.print(f"    [dim]Fast Roaming:[/dim] Yes")
+            console.print("    [dim]Fast Roaming:[/dim] Yes")
 
         # PMF
         pmf = wlan.get("pmf_mode", "")
@@ -232,8 +235,19 @@ def format_firewall_section(rules: list[dict], groups: list[dict], verbose: bool
         rulesets[ruleset].append(rule)
 
     # Sort rulesets in logical order
-    ruleset_order = ["WAN_IN", "WAN_OUT", "WAN_LOCAL", "LAN_IN", "LAN_OUT", "LAN_LOCAL", "GUEST_IN", "GUEST_OUT"]
-    sorted_rulesets = sorted(rulesets.keys(), key=lambda x: ruleset_order.index(x) if x in ruleset_order else 99)
+    ruleset_order = [
+        "WAN_IN",
+        "WAN_OUT",
+        "WAN_LOCAL",
+        "LAN_IN",
+        "LAN_OUT",
+        "LAN_LOCAL",
+        "GUEST_IN",
+        "GUEST_OUT",
+    ]
+    sorted_rulesets = sorted(
+        rulesets.keys(), key=lambda x: ruleset_order.index(x) if x in ruleset_order else 99
+    )
 
     if not rules:
         console.print("  [dim](no custom firewall rules)[/dim]")
@@ -271,7 +285,10 @@ def format_firewall_section(rules: list[dict], groups: list[dict], verbose: bool
                 if dst_port:
                     proto_str += f" {dst_port}"
 
-                console.print(f"    {idx:4} {name[:25]:<25} {action_str:<8} {src_str[:12]:<12} → {dst_str[:12]:<12} {proto_str}{status}")
+                console.print(
+                    f"    {idx:4} {name[:25]:<25} {action_str:<8} "
+                    f"{src_str[:12]:<12} → {dst_str[:12]:<12} {proto_str}{status}"
+                )
 
             console.print()
 
@@ -283,7 +300,11 @@ def format_firewall_section(rules: list[dict], groups: list[dict], verbose: bool
             group_type = group.get("group_type", "unknown")
             members = group.get("group_members", [])
 
-            type_str = {"address-group": "Address", "port-group": "Port", "network-group": "Network"}.get(group_type, group_type)
+            type_str = {
+                "address-group": "Address",
+                "port-group": "Port",
+                "network-group": "Network",
+            }.get(group_type, group_type)
             members_str = ", ".join(members[:5])
             if len(members) > 5:
                 members_str += f" (+{len(members) - 5} more)"
@@ -298,7 +319,10 @@ def format_port_forwards_section(forwards: list[dict], verbose: bool = False) ->
         console.print("  [dim](no port forwards configured)[/dim]")
         return
 
-    console.print(f"  {'Name':<20} {'Protocol':<10} {'WAN Port':<12} {'LAN IP':<16} {'LAN Port':<10} {'Enabled'}")
+    console.print(
+        f"  {'Name':<20} {'Protocol':<10} {'WAN Port':<12} "
+        f"{'LAN IP':<16} {'LAN Port':<10} {'Enabled'}"
+    )
     console.print(f"  {'-' * 20} {'-' * 10} {'-' * 12} {'-' * 16} {'-' * 10} {'-' * 7}")
 
     for fwd in sorted(forwards, key=lambda x: x.get("name", "")):
@@ -311,7 +335,9 @@ def format_port_forwards_section(forwards: list[dict], verbose: bool = False) ->
 
         enabled_str = "[green]Yes[/green]" if enabled else "[red]No[/red]"
 
-        console.print(f"  {name:<20} {proto:<10} {dst_port:<12} {fwd_ip:<16} {fwd_port:<10} {enabled_str}")
+        console.print(
+            f"  {name:<20} {proto:<10} {dst_port:<12} {fwd_ip:<16} {fwd_port:<10} {enabled_str}"
+        )
 
     console.print()
 
@@ -324,7 +350,9 @@ def format_devices_section(devices: list[dict], verbose: bool = False) -> None:
 
     # Sort by type then name
     type_order = {"ugw": 0, "udm": 0, "usw": 1, "uap": 2, "uph": 3}
-    sorted_devices = sorted(devices, key=lambda x: (type_order.get(x.get("type", ""), 99), x.get("name", "")))
+    sorted_devices = sorted(
+        devices, key=lambda x: (type_order.get(x.get("type", ""), 99), x.get("name", ""))
+    )
 
     for dev in sorted_devices:
         name = dev.get("name", "Unnamed")
@@ -337,7 +365,13 @@ def format_devices_section(devices: list[dict], verbose: bool = False) -> None:
         uptime = dev.get("uptime", 0)
 
         # Device type label
-        type_labels = {"ugw": "Gateway", "udm": "Gateway", "usw": "Switch", "uap": "AP", "uph": "Phone"}
+        type_labels = {
+            "ugw": "Gateway",
+            "udm": "Gateway",
+            "usw": "Switch",
+            "uap": "AP",
+            "uph": "Phone",
+        }
         type_label = type_labels.get(dev_type, dev_type.upper())
 
         # State
@@ -393,7 +427,9 @@ def format_devices_section(devices: list[dict], verbose: bool = False) -> None:
         console.print()
 
 
-def format_dhcp_reservations_section(reservations: list[dict], networks: list[dict], verbose: bool = False) -> None:
+def format_dhcp_reservations_section(
+    reservations: list[dict], networks: list[dict], verbose: bool = False
+) -> None:
     """Format and print DHCP reservations section."""
     if not reservations:
         console.print("  [dim](no DHCP reservations)[/dim]")
@@ -448,16 +484,17 @@ def to_yaml(config: dict, hide_secrets: bool = True) -> str:
 
     def yaml_value(v, indent=0):
         """Convert a value to YAML string."""
-        prefix = "  " * indent
         if v is None:
             return "null"
         elif isinstance(v, bool):
             return "true" if v else "false"
-        elif isinstance(v, (int, float)):
+        elif isinstance(v, int | float):
             return str(v)
         elif isinstance(v, str):
             # Hide passwords/secrets
-            if hide_secrets and any(s in v.lower() for s in ["password", "secret", "key", "x_passphrase"]):
+            if hide_secrets and any(
+                s in v.lower() for s in ["password", "secret", "key", "x_passphrase"]
+            ):
                 return '"********"'
             if "\n" in v or ":" in v or '"' in v:
                 return f'"{v}"'
@@ -465,7 +502,7 @@ def to_yaml(config: dict, hide_secrets: bool = True) -> str:
         elif isinstance(v, list):
             if not v:
                 return "[]"
-            if all(isinstance(i, (str, int, float, bool)) for i in v):
+            if all(isinstance(i, str | int | float | bool) for i in v):
                 return "[" + ", ".join(yaml_value(i) for i in v) + "]"
             return v  # Complex list, handle separately
         elif isinstance(v, dict):
@@ -480,8 +517,10 @@ def to_yaml(config: dict, hide_secrets: bool = True) -> str:
             if k.startswith("_") and k != "_id":
                 continue
             # Hide secret fields
-            if hide_secrets and any(s in k.lower() for s in ["password", "secret", "x_passphrase", "wpa_psk"]):
-                lines.append(f"{prefix}{k}: \"********\"")
+            if hide_secrets and any(
+                s in k.lower() for s in ["password", "secret", "x_passphrase", "wpa_psk"]
+            ):
+                lines.append(f'{prefix}{k}: "********"')
                 continue
 
             val = yaml_value(v, indent)
@@ -505,7 +544,9 @@ def to_yaml(config: dict, hide_secrets: bool = True) -> str:
                 if k == "name" or k.startswith("_"):
                     continue
                 val = yaml_value(v)
-                if not isinstance(val, (dict, list)) or (isinstance(val, list) and isinstance(val, str)):
+                if not isinstance(val, dict | list) or (
+                    isinstance(val, list) and isinstance(val, str)
+                ):
                     lines.append(f"    {k}: {val}")
         lines.append("")
 
@@ -517,11 +558,15 @@ def to_yaml(config: dict, hide_secrets: bool = True) -> str:
             for k, v in wlan.items():
                 if k == "name" or k.startswith("_"):
                     continue
-                if hide_secrets and any(s in k.lower() for s in ["password", "x_passphrase", "wpa_psk"]):
-                    lines.append(f"    {k}: \"********\"")
+                if hide_secrets and any(
+                    s in k.lower() for s in ["password", "x_passphrase", "wpa_psk"]
+                ):
+                    lines.append(f'    {k}: "********"')
                     continue
                 val = yaml_value(v)
-                if not isinstance(val, (dict, list)) or (isinstance(val, list) and isinstance(val, str)):
+                if not isinstance(val, dict | list) or (
+                    isinstance(val, list) and isinstance(val, str)
+                ):
                     lines.append(f"    {k}: {val}")
         lines.append("")
 
@@ -575,6 +620,7 @@ def to_yaml(config: dict, hide_secrets: bool = True) -> str:
 # Commands
 # ============================================================
 
+
 @app.command("show")
 def show_config(
     section: Annotated[
@@ -607,8 +653,8 @@ def show_config(
         ./ui lo config show -o json            # Export as JSON
         ./ui lo config show --show-secrets     # Include passwords
     """
+
     async def _fetch_config():
-        client = UniFiLocalClient()
         # Fetch only what we need based on section
         if section == ConfigSection.ALL:
             return await client.get_running_config()
@@ -639,6 +685,8 @@ def show_config(
 
     try:
         from ui_cli.commands.local.utils import run_with_spinner
+
+        client = UniFiLocalClient()
         config = run_with_spinner(_fetch_config(), "Fetching configuration...")
     except Exception as e:
         handle_error(e)
@@ -648,15 +696,22 @@ def show_config(
     if output == OutputFormat.JSON:
         # For JSON, optionally hide secrets
         if hide_secrets:
+
             def redact_secrets(obj):
                 if isinstance(obj, dict):
                     return {
-                        k: "********" if any(s in k.lower() for s in ["password", "secret", "x_passphrase", "wpa_psk"]) else redact_secrets(v)
+                        k: "********"
+                        if any(
+                            s in k.lower()
+                            for s in ["password", "secret", "x_passphrase", "wpa_psk"]
+                        )
+                        else redact_secrets(v)
                         for k, v in obj.items()
                     }
                 elif isinstance(obj, list):
                     return [redact_secrets(i) for i in obj]
                 return obj
+
             config = redact_secrets(config)
         output_json(config)
         return
@@ -754,5 +809,9 @@ def show_config(
         devices_count = len(config.get("devices", []))
         dhcp_count = len(config.get("dhcp_reservations", []))
 
-        console.print(f"[dim]Summary: {networks_count} networks, {wlans_count} SSIDs, {rules_count} firewall rules, {forwards_count} port forwards, {devices_count} devices, {dhcp_count} DHCP reservations[/dim]")
+        console.print(
+            f"[dim]Summary: {networks_count} networks, {wlans_count} SSIDs, "
+            f"{rules_count} firewall rules, {forwards_count} port forwards, "
+            f"{devices_count} devices, {dhcp_count} DHCP reservations[/dim]"
+        )
         console.print()

@@ -84,7 +84,7 @@ def output_csv(
                     value = ""
                 elif isinstance(value, bool):
                     value = "Yes" if value else "No"
-                elif isinstance(value, (list, dict)):
+                elif isinstance(value, list | dict):
                     value = json.dumps(value)
                 else:
                     value = str(value)
@@ -141,7 +141,7 @@ def output_table(
                 value = ""
             elif isinstance(value, bool):
                 value = "Yes" if value else "No"
-            elif isinstance(value, (list, dict)):
+            elif isinstance(value, list | dict):
                 value = json.dumps(value)
             else:
                 value = str(value)

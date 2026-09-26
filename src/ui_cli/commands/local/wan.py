@@ -268,10 +268,9 @@ def update_wan(
         raise typer.Exit(1)
 
     if output == OutputFormat.JSON:
-        output_json([
-            {"wan": needle, "error": err, "result": result}
-            for needle, result, err in results
-        ])
+        output_json(
+            [{"wan": needle, "error": err, "result": result} for needle, result, err in results]
+        )
         raise typer.Exit(1 if any(err for _, _, err in results) else 0)
 
     exit_code = 0

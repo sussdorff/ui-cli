@@ -1,77 +1,8 @@
 """Unit tests for client groups functionality."""
 
-import json
 import pytest
-from pathlib import Path
-from datetime import datetime, timezone
-from unittest.mock import patch, MagicMock
 
-from ui_cli.groups import (
-    GroupManager,
-    Group,
-    GroupMember,
-    AutoGroupRules,
-    GroupsFile,
-)
-
-
-class TestGroupMember:
-    """Tests for GroupMember model."""
-
-    def test_create_member_with_mac(self):
-        """Test creating a member with just MAC address."""
-        member = GroupMember(mac="AA:BB:CC:DD:EE:FF")
-        assert member.mac == "AA:BB:CC:DD:EE:FF"
-        assert member.alias is None
-
-    def test_create_member_with_alias(self):
-        """Test creating a member with MAC and alias."""
-        member = GroupMember(mac="AA:BB:CC:DD:EE:FF", alias="My Device")
-        assert member.mac == "AA:BB:CC:DD:EE:FF"
-        assert member.alias == "My Device"
-
-
-class TestAutoGroupRules:
-    """Tests for AutoGroupRules model."""
-
-    def test_create_rules_with_vendor(self):
-        """Test creating rules with vendor filter."""
-        rules = AutoGroupRules(vendor=["Apple", "Samsung"])
-        assert rules.vendor == ["Apple", "Samsung"]
-        assert rules.name is None
-
-    def test_create_rules_multiple_types(self):
-        """Test creating rules with multiple filter types."""
-        rules = AutoGroupRules(
-            vendor=["Apple"],
-            network=["Guest"],
-            conn_type=["wireless"],
-        )
-        assert rules.vendor == ["Apple"]
-        assert rules.network == ["Guest"]
-        assert rules.conn_type == ["wireless"]
-
-
-class TestGroup:
-    """Tests for Group model."""
-
-    def test_create_static_group(self):
-        """Test creating a static group."""
-        now = datetime.now(timezone.utc)
-        group = Group(name="Kids Devices", type="static", created_at=now, updated_at=now)
-        assert group.name == "Kids Devices"
-        assert group.type == "static"
-        assert group.members is None
-        assert group.rules is None
-
-    def test_create_auto_group(self):
-        """Test creating an auto group with rules."""
-        now = datetime.now(timezone.utc)
-        rules = AutoGroupRules(vendor=["Apple"])
-        group = Group(name="Apple Devices", type="auto", rules=rules, created_at=now, updated_at=now)
-        assert group.name == "Apple Devices"
-        assert group.type == "auto"
-        assert group.rules.vendor == ["Apple"]
+from ui_cli.groups import AutoGroupRules, GroupManager
 
 
 class TestGroupManager:

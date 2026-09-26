@@ -1,11 +1,21 @@
 """Unit tests for formatting helper functions."""
 
-import pytest
-
-from ui_cli.commands.local.dpi import format_bytes as dpi_format_bytes, get_category_name, get_app_name
-from ui_cli.commands.local.vouchers import format_duration, format_quota, format_code, is_voucher_expired
-from ui_cli.commands.local.devices import get_device_type, get_device_status, get_uptime
-from ui_cli.commands.local.stats import format_bytes as stats_format_bytes, format_timestamp
+from ui_cli.commands.local.devices import get_device_status, get_device_type, get_uptime
+from ui_cli.commands.local.dpi import (
+    format_bytes as dpi_format_bytes,
+)
+from ui_cli.commands.local.dpi import (
+    get_app_name,
+    get_category_name,
+)
+from ui_cli.commands.local.stats import format_bytes as stats_format_bytes
+from ui_cli.commands.local.stats import format_timestamp
+from ui_cli.commands.local.vouchers import (
+    format_code,
+    format_duration,
+    format_quota,
+    is_voucher_expired,
+)
 
 
 class TestBytesFormatting:
