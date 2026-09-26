@@ -6,6 +6,8 @@ from typing import Any
 
 import pytest
 
+from ui_cli.config import Settings
+
 
 @pytest.fixture(autouse=True)
 def _isolated_environment(tmp_path_factory, monkeypatch):
@@ -18,10 +20,25 @@ def _isolated_environment(tmp_path_factory, monkeypatch):
     monkeypatch.setenv("GIT_CONFIG_GLOBAL", os.devnull)
     monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
+    # The settings singleton reads UNIFI_* variables and config files at import time,
+    # so rebuild it from the isolated environment for every module that bound it.
+    for name in list(os.environ):
+        if name.startswith("UNIFI_"):
+            monkeypatch.delenv(name)
+    isolated_settings = Settings(_env_file=None)
+    for module in (
+        "ui_cli.config",
+        "ui_cli.client",
+        "ui_cli.local_client",
+        "ui_cli.commands.status",
+    ):
+        monkeypatch.setattr(f"{module}.settings", isolated_settings)
+
 
 # ============================================================
 # Mock Data Fixtures
 # ============================================================
+
 
 @pytest.fixture
 def mock_hosts_response() -> list[dict[str, Any]]:
@@ -272,6 +289,7 @@ def mock_daily_stats_response() -> list[dict[str, Any]]:
 # ============================================================
 # WLAN Fixtures
 # ============================================================
+
 
 @pytest.fixture
 def mock_wlans_response() -> list[dict[str, Any]]:
