@@ -5,7 +5,7 @@
 # Gorilla Powered! 🦍
 # ============================================
 
-FROM python:3.11-slim as builder
+FROM python:3.14-slim AS builder
 
 WORKDIR /app
 
@@ -26,7 +26,7 @@ RUN pip install --no-cache-dir --user .
 # ============================================
 # Production image
 # ============================================
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 LABEL org.opencontainers.image.title="UI-CLI"
 LABEL org.opencontainers.image.description="Manage your UniFi infrastructure from the command line"

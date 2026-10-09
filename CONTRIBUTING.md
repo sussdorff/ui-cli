@@ -6,6 +6,9 @@ Thank you for your interest in contributing to UniFi CLI!
 
 ### Development Setup
 
+Development uses Python 3.14 or newer on its latest patch release, and the
+latest `uv` release.
+
 ```bash
 # Clone the repository
 git clone https://github.com/vedanta/ui-cli.git
@@ -37,6 +40,18 @@ pytest tests/integration/
 
 # Run with coverage
 pytest --cov=ui_cli
+```
+
+### Pre-push Preflight
+
+`scripts/dev/preflight.sh` checks the repository's toolchain declarations
+(Python, uv, CI setup actions, images) against the installed toolchains standard
+with `.agents/standards/toolchains/scripts/check_toolchain_versions.py`. The
+shared pre-push hook runs it before every push, and the `toolchains` CI job runs
+the same check. Run it manually with:
+
+```bash
+scripts/dev/preflight.sh
 ```
 
 ## Releases

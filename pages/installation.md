@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- Python 3.10 or higher
+- Python 3.14 or newer (latest patch release)
 - pip or conda
 
 ## Install from PyPI

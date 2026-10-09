@@ -76,7 +76,7 @@ UI-CLI is a comprehensive command-line tool for managing UniFi network infrastru
 
 ### Prerequisites
 
-- Python 3.10+
+- Python 3.14 or newer (latest patch release)
 - Conda (recommended) or pip
 - Network access to your UniFi controller
 
