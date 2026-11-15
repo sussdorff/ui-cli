@@ -38,13 +38,3 @@ jobs:
       - name: Build distribution artifacts
         run: uv build
 
-  toolchains:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Check toolchain versions
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python3 .agents/standards/toolchains/scripts/check_toolchain_versions.py

@@ -15,7 +15,7 @@ ccore tracker close sussdorff/ui-cli#N
 ## Session Completion
 
 Use the installed delivery workflow for verification, review and pull request
-publication. Run the installed session-retro skill after delivery. Report the
+publication. Run `/cognovis:session-retro` after delivery. Report the
 pull request's merge state and any project-specific postconditions. Preserve
 existing authorization for the same concrete scope and never discard foreign
 or uncommitted work during cleanup.

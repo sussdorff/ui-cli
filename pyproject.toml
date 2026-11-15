@@ -64,7 +64,6 @@ packages = ["src/ui_cli"]
 [tool.ruff]
 line-length = 100
 target-version = "py314"
-extend-exclude = [".agents", ".claude"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]

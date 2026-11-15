@@ -42,18 +42,6 @@ pytest tests/integration/
 pytest --cov=ui_cli
 ```
 
-### Pre-push Preflight
-
-`scripts/dev/preflight.sh` checks the repository's toolchain declarations
-(Python, uv, CI setup actions, images) against the installed toolchains standard
-with `.agents/standards/toolchains/scripts/check_toolchain_versions.py`. The
-shared pre-push hook runs it before every push, and the `toolchains` CI job runs
-the same check. Run it manually with:
-
-```bash
-scripts/dev/preflight.sh
-```
-
 ## Releases
 
 `ui-cli` now uses a single version source in [`VERSION`](VERSION), while
